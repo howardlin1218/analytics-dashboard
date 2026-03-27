@@ -14,4 +14,8 @@ yarn-error.log*
 .DS_Store
 
 # config
-config.js 
+config.js
+
+app.js
+
+api.js
