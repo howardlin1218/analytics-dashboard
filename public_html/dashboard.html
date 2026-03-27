@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script>
+        // Check for saved theme preference directly in head to prevent FOUC
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme && savedTheme === 'dark') {
+            document.documentElement.classList.add('dark-theme');
+        }
+    </script>
     <script src="./app.js" defer></script>
 
     <link rel="icon" type="image/png" href="./favicons/google-analytics-black.png">
@@ -20,6 +27,7 @@
             <img src="./favicons/google-analytics-black.png">
         </div>
         <div class="user-profile">
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
             <span id="user-display-name">User</span>
             <a id="logout-btn">Sign Out</a>
         </div>
@@ -43,7 +51,7 @@
         <div class="modal-content">
             <h3>Generate Analytics Report</h3>
             <textarea id="report-comments" rows="6"></textarea>
-            
+
             <div class="modal-actions">
                 <button class="modal-btn btn-cancel" onclick="closeReportModal()">Cancel</button>
                 <button class="modal-btn btn-save" onclick="submitReport()" id="btn-generate-report">Generate & Save PDF</button>
@@ -51,5 +59,35 @@
         </div>
     </div>
 
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        // Setup initial icon
+        if (document.documentElement.classList.contains('dark-theme')) {
+            themeToggle.innerHTML = '☀️';
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark-theme');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            themeToggle.innerHTML = isDark ? '☀️' : '🌙';
+
+            // Also reload the charts with appropriate colors if they exist
+            if (typeof Chart !== 'undefined') {
+                Chart.defaults.color = isDark ? '#cbd5e1' : '#666';
+                Chart.defaults.scale.grid.color = isDark ? '#334155' : '#e5e7eb';
+                if (window.activeCharts) {
+                    window.activeCharts.forEach(chart => chart.update());
+                }
+            }
+        });
+
+        // Initialize chart defaults right away if needed
+        if (typeof Chart !== 'undefined') {
+            const isDarkInit = document.documentElement.classList.contains('dark-theme');
+            Chart.defaults.color = isDarkInit ? '#cbd5e1' : '#666';
+            Chart.defaults.scale.grid.color = isDarkInit ? '#334155' : '#e5e7eb';
+        }
+    </script>
 </body>
 </html>
