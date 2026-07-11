@@ -33,7 +33,7 @@
         </div>
     </header>
 
-    <div class="header"> 
+    <div id="sidebar" class="header">
         <div id="header-group">
             <a href="#/overview" id="nav-overview">Overview</a>
             <a href="#/performance" id="nav-performance">Performance</a>
@@ -42,12 +42,20 @@
             <a href="#/reports" id="nav-reports">Reports</a>
             <a href="#/admin" id="nav-admin">Admin Panel</a>
         </div>
+
+        <div class="sidebar-toggle-wrapper">
+            <button id="sidebar-toggle" class="toggle-btn" aria-label="Toggle Menu">
+                <span class="sidebar-arrow"></span>
+            </button>
+        </div>
     </div>
 
-    <main id="app-viewport">
-    </main>
+    <div id="viewport-wrapper"> 
+        <main id="app-viewport">
+        </main>
+    </div>
 
-    <div id="report-modal" class="modal-overlay hidden">
+    <div id="report-modal" class="modal-overlay">
         <div class="modal-content">
             <h3>Generate Analytics Report</h3>
             <textarea id="report-comments" rows="6"></textarea>

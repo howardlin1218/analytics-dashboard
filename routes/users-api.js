@@ -15,7 +15,7 @@ router.get('/', requireAdmin, async (req, res) => {
     try {
         const pool = req.app.get('pool');
         const [users] = await pool.execute('SELECT id, email, display_name, role, created_at, last_login, permission FROM users ORDER BY created_at');
-        console.log(users)
+        // console.log(users)
         res.json({ success: true, data: users });
     } catch (err) {
         console.error('List users error:', err.message);
@@ -94,7 +94,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         await pool.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, params);
 
         // sync the session credentials if editing yourself
-        if (req.session && req.session.user && req.session.user.id === parseInt(req.params.id)) {
+        if (req.session && req.session.user && req.session.user.id === parseInt(req.params.id) && userRole) {
             req.session.user.displayName = displayName;
             req.session.user.role = role;
             req.session.user.permission = role === 'analyst' ? filtered : [];

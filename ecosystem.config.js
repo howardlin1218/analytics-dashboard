@@ -8,7 +8,7 @@ module.exports = {
       // Force "fork" mode to save RAM on 1vCPU
       instances: 1,
       exec_mode: "fork",
-      env: { NODE_ENV: "production" }
+      env: { NODE_ENV: "local" }
     },
     {
       name: "server-dashboard",
