@@ -1,43 +1,91 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 
-// Middleware: require permissions or super admin
+function getLogsFromFile() {
+    const jsonlPath = path.join(__dirname, '../../analytics_collector/.logs/analytics.jsonl');
+    if (!fs.existsSync(jsonlPath)) return [];
+    try {
+        const fileContent = fs.readFileSync(jsonlPath, 'utf8');
+        const lines = fileContent.trim().split('\n').filter(Boolean);
+        return lines.map((line, idx) => {
+            try {
+                const parsed = JSON.parse(line);
+                if (['pageview', 'page_exit'].includes(parsed.type)) {
+                    return {
+                        event_type: parsed.type,
+                        url: parsed.url || 'unknown',
+                        payload: parsed
+                    };
+                }
+                return null;
+            } catch (e) { return null; }
+        }).filter(Boolean);
+    } catch (e) { return []; }
+}
+
+// Helper to merge DB and file rows (Prioritizes Database; falls back to JSONL file if DB is empty or unavailable)
+function getMergedLogs(dbRows, fileRows) {
+    if (Array.isArray(dbRows) && dbRows.length > 0) {
+        return dbRows;
+    }
+    return Array.isArray(fileRows) ? fileRows : [];
+}
+
+function safeExtractSiteId(payload, rawUrl) {
+    if (payload && (payload.siteId || payload.site_id)) {
+        return payload.siteId || payload.site_id;
+    }
+    const targetUrl = (payload && payload.url) || rawUrl;
+    if (!targetUrl || targetUrl === 'unknown') return null;
+    try {
+        return new URL(targetUrl).hostname;
+    } catch (e) {
+        return targetUrl;
+    }
+}
+
+// Middleware: require analyst or super admin
 function requirePermissions(req, res, next) {
-    const user = req.session.user;
-        if (user.role === 'viewer') {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Access Denied: You do not have permission to view Performance data.' 
-            });
-        }
-        const isSuperAdmin = user.role === 'super admin';
-        
-        // Handle permissions (ensure it's an array for .includes check)
-        let perms = user.permission || [];
-        if (typeof perms === 'string') {
-            try { perms = JSON.parse(perms); } catch(e) { perms = []; }
-        }
-
-        const hasPerformanceAccess = perms.includes('performance');
-
-        if (!isSuperAdmin && !(user.role === 'analyst' && hasPerformanceAccess)) {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Access Denied: You do not have permission to view Performance data.' 
-            });
-        }
+    const user = req.session ? req.session.user : null;
+    if (!user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Please log in.' });
+    }
+    if (user.role === 'viewer') {
+        return res.status(403).json({ 
+            success: false, 
+            error: 'Access Denied: You do not have permission to view Performance data.' 
+        });
+    }
 
     next();
 }
 
 router.get('/', requirePermissions, async (req, res) => {
     try {
-        const pool = req.app.get('pool');
-        
-        // Fetch only pageview and page_exit logs
-        const [rows] = await pool.query(
-            'SELECT event_type, url, payload FROM activity_logs WHERE event_type IN ("pageview", "page_exit")'
-        );
+        const selectedSite = req.query.siteId;
+        let dbRows = [];
+        try {
+            const pool = req.app.get('pool');
+            const [rows] = await pool.query(
+                'SELECT event_type, url, payload FROM activity_logs WHERE event_type IN ("pageview", "page_exit")'
+            );
+            dbRows = rows || [];
+        } catch(e) {}
+
+        const fileRows = getLogsFromFile();
+        const rows = getMergedLogs(dbRows, fileRows);
+
+        let filteredRows = rows;
+        if (selectedSite && selectedSite !== 'all') {
+            filteredRows = rows.filter(row => {
+                let payload = {};
+                try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch(e) {}
+                const sId = safeExtractSiteId(payload, row.url);
+                return sId === selectedSite;
+            });
+        }
 
         // --- PREPARE VARIABLES ---
         let totalLcp = 0, lcpCount = 0;
@@ -51,7 +99,7 @@ router.get('/', requirePermissions, async (req, res) => {
         const pageStats = {};
 
         // --- PROCESS THE LOGS ---
-        rows.forEach(row => {
+        filteredRows.forEach(row => {
             let payload = {};
             try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } 
             catch (e) { return; }

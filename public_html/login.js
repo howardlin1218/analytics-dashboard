@@ -37,3 +37,23 @@ form.addEventListener('submit', async (e) => {
         submitBtn.textContent = 'Sign In';
     }
 });
+
+const guestBtn = document.getElementById('guest-login-btn');
+if (guestBtn) {
+    guestBtn.addEventListener('click', async () => {
+        try {
+            const res = await fetch(localDev + '/api/log/guest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                window.location.href = './dashboard.html';
+            }
+        } catch (err) {
+            errorDiv.textContent = 'Network error during guest login.';
+            errorDiv.hidden = false;
+        }
+    });
+}

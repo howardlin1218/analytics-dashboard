@@ -1,31 +1,79 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 
-// Middleware: require sessions analyst or super admin
+function getLogsFromFile() {
+    const jsonlPath = path.join(__dirname, '../../analytics_collector/.logs/analytics.jsonl');
+    if (!fs.existsSync(jsonlPath)) return [];
+    try {
+        const fileContent = fs.readFileSync(jsonlPath, 'utf8');
+        const lines = fileContent.trim().split('\n').filter(Boolean);
+        return lines.map((line, idx) => {
+            try {
+                const parsed = JSON.parse(line);
+                if (parsed.session || parsed.sessionId) {
+                    return {
+                        id: idx + 1,
+                        event_type: parsed.type || 'unknown',
+                        url: parsed.url || 'unknown',
+                        ip_address: parsed.ip || '127.0.0.1',
+                        user_agent: parsed.technographics ? parsed.technographics.userAgent : 'unknown',
+                        payload: parsed,
+                        created_at: parsed.serverTimestamp || parsed.timestamp || new Date().toISOString()
+                    };
+                }
+                return null;
+            } catch (e) { return null; }
+        }).filter(Boolean);
+    } catch (e) { return []; }
+}
+
+// Helper to merge DB and file rows (Prioritizes Database; falls back to JSONL file if DB is empty or unavailable)
+function getMergedLogs(dbRows, fileRows) {
+    if (Array.isArray(dbRows) && dbRows.length > 0) {
+        return dbRows;
+    }
+    return Array.isArray(fileRows) ? fileRows : [];
+}
+
+function safeExtractSiteId(payload, rawUrl) {
+    if (payload && (payload.siteId || payload.site_id)) {
+        return payload.siteId || payload.site_id;
+    }
+    const targetUrl = (payload && payload.url) || rawUrl;
+    if (!targetUrl || targetUrl === 'unknown') return null;
+    try { return new URL(targetUrl).hostname; } catch (e) { return targetUrl; }
+}
+
+// Middleware: require analyst or super admin
 function requirePermissions(req, res, next) {
-    const user = req.session.user;
-        if (user.role === 'viewer') {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Access Denied: You do not have permission to view Sessions data.' 
-            });
-        }
-        const isSuperAdmin = user.role === 'super admin';
-        
-        // Handle permissions (ensure it's an array for .includes check)
-        let perms = user.permission || [];
-        if (typeof perms === 'string') {
-            try { perms = JSON.parse(perms); } catch(e) { perms = []; }
-        }
+    const user = req.session ? req.session.user : null;
+    if (!user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Please log in.' });
+    }
+    if (user.role === 'viewer') {
+        return res.status(403).json({ 
+            success: false, 
+            error: 'Access Denied: You do not have permission to view Sessions data.' 
+        });
+    }
+    const isSuperAdmin = user.role === 'super admin';
+    
+    // Handle permissions (ensure it's an array for .includes check)
+    let perms = user.permission || [];
+    if (typeof perms === 'string') {
+        try { perms = JSON.parse(perms); } catch(e) { perms = []; }
+    }
 
-        const hasSessionsAccess = perms.includes('sessions');
+    const hasSessionsAccess = perms.includes('sessions');
 
-        if (!isSuperAdmin && !(user.role === 'analyst' && hasSessionsAccess)) {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Access Denied: You do not have permission to view Sessions data.' 
-            });
-        }
+    if (!isSuperAdmin && user.role !== 'guest' && !(user.role === 'analyst' && hasSessionsAccess)) {
+        return res.status(403).json({ 
+            success: false, 
+            error: 'Access Denied: You do not have permission to view Sessions data.' 
+        });
+    }
 
     next();
 }
@@ -49,22 +97,56 @@ function parseUserAgent(uaString) {
     return { os, browser, device };
 }
 
-// GET /api/sessions - Get the list of unique sessions for the sidebar
 router.get('/', requirePermissions, async (req, res) => {
     try {
-        const pool = req.app.get('pool');
-        const [sessions] = await pool.query(`
-            SELECT 
-                COALESCE(payload->>'$.session', payload->>'$.sessionId') as session_id, 
-                COUNT(*) as total_actions, 
-                MIN(created_at) as start_time,
-                MAX(created_at) as end_time,
-                MAX(ip_address) as ip_address
-            FROM activity_logs 
-            WHERE COALESCE(payload->>'$.session', payload->>'$.sessionId') IS NOT NULL
-            GROUP BY session_id 
-            ORDER BY start_time DESC
-        `);
+        const selectedSite = req.query.siteId;
+        let dbRows = [];
+        try {
+            const pool = req.app.get('pool');
+            const [rows] = await pool.query(`
+                SELECT id, event_type, url, ip_address, user_agent, payload, created_at
+                FROM activity_logs 
+                WHERE COALESCE(payload->>'$.session', payload->>'$.sessionId') IS NOT NULL
+            `);
+            dbRows = rows || [];
+        } catch(e) {}
+
+        const fileRows = getLogsFromFile();
+        const rows = getMergedLogs(dbRows, fileRows);
+
+        let logs = rows.map(row => {
+            let payload = {};
+            try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch(e) {}
+            return {
+                session_id: payload.session || payload.sessionId,
+                siteId: safeExtractSiteId(payload, row.url),
+                ip_address: row.ip_address,
+                created_at: row.created_at
+            };
+        });
+
+        if (selectedSite && selectedSite !== 'all') {
+            logs = logs.filter(l => l.siteId === selectedSite);
+        }
+
+        const sessionMap = {};
+        logs.forEach(l => {
+            const sid = l.session_id;
+            if (!sessionMap[sid]) {
+                sessionMap[sid] = {
+                    session_id: sid,
+                    total_actions: 0,
+                    start_time: l.created_at,
+                    end_time: l.created_at,
+                    ip_address: l.ip_address
+                };
+            }
+            sessionMap[sid].total_actions++;
+            if (new Date(l.created_at) < new Date(sessionMap[sid].start_time)) sessionMap[sid].start_time = l.created_at;
+            if (new Date(l.created_at) > new Date(sessionMap[sid].end_time)) sessionMap[sid].end_time = l.created_at;
+        });
+
+        const sessions = Object.values(sessionMap).sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
         res.json({ success: true, data: sessions });
     } catch (err) {
         console.error('Session List Error:', err.message);
@@ -72,20 +154,29 @@ router.get('/', requirePermissions, async (req, res) => {
     }
 });
 
-// GET /api/sessions/:id - Get the detailed profile and timeline for one session
 router.get('/:id', requirePermissions, async (req, res) => {
     try {
-        const pool = req.app.get('pool');
         const sessionId = req.params.id.trim();
+        let dbLogs = [];
+        try {
+            const pool = req.app.get('pool');
+            const [rows] = await pool.query(
+                `SELECT id, event_type, url, ip_address, user_agent, payload, created_at 
+                 FROM activity_logs 
+                 WHERE JSON_UNQUOTE(JSON_EXTRACT(payload, '$.session')) = ? 
+                    OR JSON_UNQUOTE(JSON_EXTRACT(payload, '$.sessionId')) = ?
+                 ORDER BY created_at ASC`,
+                [sessionId, sessionId]
+            );
+            dbLogs = rows || [];
+        } catch(e) {}
 
-        const [logs] = await pool.query(
-            `SELECT id, event_type, url, ip_address, user_agent, payload, created_at 
-             FROM activity_logs 
-             WHERE JSON_UNQUOTE(JSON_EXTRACT(payload, '$.session')) = ? 
-                OR JSON_UNQUOTE(JSON_EXTRACT(payload, '$.sessionId')) = ?
-             ORDER BY created_at ASC`,
-            [sessionId, sessionId]
-        );
+        const fileRows = (dbLogs && dbLogs.length > 0) ? [] : getLogsFromFile().filter(r => {
+            const p = r.payload;
+            return p && (p.session === sessionId || p.sessionId === sessionId);
+        });
+
+        const logs = getMergedLogs(dbLogs, fileRows);
 
         if (logs.length === 0) return res.json({ success: true, profile: null, timeline: [] });
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -25,6 +25,18 @@
     <header class="top-nav">
         <div class="brand">
             <img src="./favicons/google-analytics-black.png">
+        </div>
+        <div class="custom-site-dropdown" id="custom-site-dropdown">
+            <button type="button" class="custom-dropdown-trigger" id="custom-dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
+                <span class="site-icon">🌐</span>
+                <span class="custom-dropdown-selected" id="custom-dropdown-selected">All Sites</span>
+                <span class="custom-dropdown-chevron">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </span>
+            </button>
+            <div class="custom-dropdown-menu" id="custom-dropdown-menu" role="listbox">
+            </div>
+            <select id="site-selector" style="display: none;"></select>
         </div>
         <div class="user-profile">
             <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>

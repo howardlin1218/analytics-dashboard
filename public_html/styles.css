@@ -1,4 +1,4 @@
-﻿* {
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -66,6 +66,167 @@ a {
     width: 100%;
 
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ---------- Custom Floating Site Selector Dropdown ---------- */
+.custom-site-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(241, 245, 249, 0.9);
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-dropdown-trigger:hover,
+.custom-dropdown-trigger.active {
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.15);
+}
+
+.site-icon {
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+}
+
+.custom-dropdown-selected {
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.custom-dropdown-chevron {
+    display: flex;
+    align-items: center;
+    color: #64748b;
+    transition: transform 0.25s ease;
+}
+
+.custom-dropdown-trigger.active .custom-dropdown-chevron {
+    transform: rotate(180deg);
+}
+
+/* Floating Dropdown Menu (Opens cleanly below trigger) */
+.custom-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 210px;
+    max-width: 280px;
+    max-height: 280px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    padding: 6px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.custom-dropdown-menu.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Custom Dropdown Option Items */
+.custom-dropdown-item {
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    transition: all 0.15s ease;
+}
+
+.custom-dropdown-item:last-child {
+    margin-bottom: 0;
+}
+
+.custom-dropdown-item:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+}
+
+.custom-dropdown-item.selected {
+    background: #eff6ff;
+    color: #2563eb;
+    font-weight: 700;
+}
+
+.custom-dropdown-item .check-icon {
+    font-size: 0.85rem;
+    color: #2563eb;
+}
+
+/* Dark Mode Custom Dropdown */
+.dark-theme .custom-dropdown-trigger {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .custom-dropdown-trigger:hover,
+.dark-theme .custom-dropdown-trigger.active {
+    border-color: #8b5cf6;
+    background: #1e293b;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+}
+
+.dark-theme .custom-dropdown-chevron {
+    color: #94a3b8;
+}
+
+.dark-theme .custom-dropdown-menu {
+    background: rgba(15, 23, 42, 0.96);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.dark-theme .custom-dropdown-item {
+    color: #cbd5e1;
+}
+
+.dark-theme .custom-dropdown-item:hover {
+    background: #1e293b;
+    color: #c084fc;
+}
+
+.dark-theme .custom-dropdown-item.selected {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c084fc;
+    font-weight: 700;
+}
+
+.dark-theme .custom-dropdown-item .check-icon {
+    color: #c084fc;
 }
 
 #nav-overview,
