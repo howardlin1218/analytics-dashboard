@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
+    --primary: 217 91% 53%; /* #1d4ed8 / #2563eb solid blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 217 91% 53%;
+    --radius: 0.5rem;
+  }
+
+  /* Sleek Obsidian Black Dark Mode */
+  .dark, .dark-theme {
+    --background: 0 0% 4%; /* #0a0a0a solid obsidian black */
+    --foreground: 0 0% 98%; /* #fafafa solid crisp white */
+    --card: 0 0% 8%; /* #141414 solid deep obsidian card */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%; /* #121212 solid obsidian popover */
+    --popover-foreground: 0 0% 98%;
+    --primary: 217 91% 60%; /* #3b82f6 solid vivid blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 12%; /* #1f1f1f solid surface */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 12%; /* #1f1f1f solid muted */
+    --muted-foreground: 0 0% 64%; /* #a3a3a3 solid muted text */
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 75% 55%; /* #ef4444 solid red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 16%; /* #292929 solid sleek border */
+    --input: 0 0% 16%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground min-h-screen font-sans antialiased;
+  }
+}

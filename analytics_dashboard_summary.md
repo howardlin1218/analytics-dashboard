@@ -1,0 +1,100 @@
+# Analytics Dashboard Summary
+
+## Project Overview
+- **What the Project Does**:
+  - `analytics-dashboard` is a self-hosted, full-stack web telemetry and real-time application monitoring platform.
+  - It pairs with an upstream event collector service (`analytics_collector`) to aggregate, analyze, visualize, and generate exportable reports on client-side web interactions, system performance, and frontend errors.
+- **Problems It Solves**:
+  - **Eliminates Third-Party Privacy & Data Governance Issues**: Replaces third-party trackers like Google Analytics with a self-hosted solution where all telemetry data remains completely owned and secured within the team's private database.
+  - **Ad-Blocker Resilience & Direct Ingestion**: Allows first-party telemetry collection that avoids standard tracking script blocklists.
+  - **Unified Telemetry in One Pane**: Bridges high-level traffic analysis (pageviews, visitor sessions) with deep engineering observability (Core Web Vitals, uncaught JavaScript exceptions, and step-by-step user interaction replay).
+- **Core Functionalities & Features**:
+  - **Overview Dashboard**: Displays summary metric cards (Total Pageviews, Unique Sessions, Avg Time on Page, Total Events), an interactive chronological line chart of pageviews per day, and a Top Pages table ranked by total and unique visitor counts.
+  - **Multi-Site Domain Selector**: Dynamically extracts unique hostnames/domains from incoming logs, allowing users to switch between global ("All Sites") and site-specific analytics.
+  - **Core Web Vitals & Performance Monitoring**: Tracks Google Core Web Vitals (Largest Contentful Paint [LCP], Interaction to Next Paint [INP], Cumulative Layout Shift [CLS]) with color-coded grading badges ("Good", "Needs Work", "Poor"). Includes page load time distribution histograms and a sortable per-page performance table (sort by LCP, INP, CLS, or URL path).
+  - **Frontend Error Tracking & Diagnostics**: Aggregates uncaught client-side JavaScript runtime errors and resource loading failures. Groups identical errors by message/source, tracks occurrence frequency and last seen timestamps, and provides an expandable viewer for full call stacks and source coordinates.
+  - **Session Tracer & User Journey Replay**: Performs granular session analysis featuring detailed technographic profiling (OS, browser, device type, screen/viewport resolution, device pixel ratio, touch support, CPU cores, RAM estimate, color scheme, timezone, network downlink/RTT, and feature flags). Displays a chronological timeline of user actions (pageviews, TTFB/DOM load times, clicks with X/Y coordinates and target DOM selectors, scroll depth milestones, idle break start/end durations, and key events).
+  - **Automated PDF Report Generation**: Provides a built-in modal for analysts to record qualitative insights, snapshot live UI metrics, and trigger server-side headless browser rendering (via Puppeteer) to generate publication-ready PDF reports archived in database and disk.
+  - **Role-Based Access Control (RBAC)**: Administrative management suite with four access tiers (`super admin`, `analyst`, `viewer`, and `guest` demo mode) supporting granular per-module permissions (`performance`, `errors`, `sessions`).
+  - **UI/UX & Accessibility**: Includes a zero-FOUC (Flash of Unstyled Content) Light/Dark mode toggle with dynamic Chart.js canvas recoloring, a responsive collapsible sidebar, and toast notifications.
+- **Real-World Use Cases**:
+  - Production web application observability for monitoring frontend regressions, slowdowns, and uncaught exceptions.
+  - Product analysis for understanding navigation patterns, scroll engagement, and drop-off rates.
+  - Compliance-sensitive environments requiring privacy-preserving, first-party data storage (GDPR/CCPA).
+  - Demonstrating modern full-stack telemetry and systems architecture (developed in the context of CSE 135 Web Development / Systems).
+- **Motivation**:
+  - Built to explore the complete lifecycle of web telemetry—from low-level browser beacon ingestion and resilient backend data pipelines to interactive client-side visualization, multi-tenant security, and automated executive reporting.
+
+## Tech Stack:
+- **Programming Languages**:
+  - **JavaScript (ES6+)**: Used across the entire stack—Node.js CommonJS on the backend and native vanilla JavaScript in the browser.
+  - **HTML5**: Semantic document structuring, modals, and accessible interactive controls.
+  - **CSS3**: Custom styling featuring CSS variables (custom design tokens for theme palettes), responsive Grid/Flexbox layouts, and keyframe transitions.
+  - **SQL**: Relational queries and JSON extraction tailored for MySQL.
+- **Backend Frameworks & Runtime**:
+  - **Node.js**: Asynchronous event-driven runtime environment.
+  - **Express.js (v5.2.1)**: Modern next-generation web application framework routing API requests and managing middleware.
+- **Frontend Architecture**:
+  - **Vanilla JavaScript SPA (Single Page Application)**: Built entirely without heavy frameworks (no React, Vue, or Angular), minimizing overhead and delivering near-instant page transitions.
+  - **Client-Side Hash Router**: Lightweight hash-based routing engine (`#/overview`, `#/performance`, `#/errors`, `#/sessions`, `#/reports`, `#/admin`).
+  - **Chart.js (v4.x via CDN)**: Canvas-based responsive visualization library rendering interactive line and bar charts.
+- **Database & Storage**:
+  - **MySQL**: Relational storage engine storing structured entities (`users`, `reports`) alongside semi-structured event logs (`activity_logs`).
+  - **JSON in MySQL**: Utilizes MySQL JSON functions (`JSON_UNQUOTE`, `JSON_EXTRACT`, payload column) for flexible telemetry payload schemas.
+  - **Local Filesystem**: Hybrid fallback storage reading newline-delimited JSON (`analytics.jsonl`) and archiving generated PDF reports (`public_html/reports/`).
+- **External Libraries & Dependencies**:
+  - **`mysql2` (v3.18.2)**: High-performance MySQL driver with promise-based query pooling.
+  - **`bcrypt` (v6.0.0)**: Cryptographic password hashing (salt rounds = 10) for secure credential storage.
+  - **`express-session` (v1.19.0)**: Server-side session management using encrypted, HTTP-only cookie handshakes.
+  - **`puppeteer` (v24.39.1)**: Headless Chromium browser automation library for server-side HTML-to-PDF rendering.
+  - **`cors` (v2.8.6)**: Middleware for Cross-Origin Resource Sharing control.
+  - **`dotenv` (v17.3.1)**: Environment configuration loader.
+  - **`nodemon` (v3.1.14)**: Development utility for automatic server restarts on file modifications.
+- **Deployment & Hosting Infrastructure**:
+  - **PM2 Process Manager**: Configured via `ecosystem.config.js` for process clustering, monitoring, and automatic restarts.
+  - **Linux / Ubuntu VPS**: Production environment running on a 1 vCPU cloud instance with memory capping (`--max-old-space-size=300`).
+  - **Reverse Proxy**: Loopback proxy configuration (`trust proxy: 'loopback'`) integrated with live production domain `https://www.reporting.howard1218.site`.
+
+## Architectural Choices
+- **Decoupled Ingestion vs. Reporting Services**:
+  - Telemetry collection (`analytics_collector` on port 3005) and reporting dashboard (`analytics-dashboard` on port 3006) run as separate Node services.
+  - *Rationale*: High-frequency tracking beacons, fetch calls, and pixel requests do not compete for resources with database-heavy dashboard queries, preventing dashboard operations from slowing down event ingestion.
+- **Frontend-to-Backend Communication**:
+  - Clean RESTful JSON API using standard HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`).
+  - Client requests use credentialed fetch (`credentials: 'include'`) ensuring stateful session cookies are transmitted for authentication and authorization.
+  - Site filtering is implemented via query string parameters (`?siteId=...`), allowing views to be isolated per domain without altering API routes.
+- **Hybrid Storage & Resilient Fallback Strategy**:
+  - The API queries the MySQL database pool first; if the database is unreachable, unpopulated, or undergoes maintenance, it seamlessly falls back to reading and parsing newline-delimited JSON (`analytics.jsonl`) from the collector's storage.
+  - *Advantage*: Ensures high dashboard availability and eliminates single points of failure during database interruptions.
+- **Multi-Tier Role-Based Access Control (RBAC)**:
+  - **Super Admin**: Unrestricted access to all analytics modules and full user administration (create, update roles/permissions, delete users).
+  - **Analyst**: Access to Overview plus granular module permissions (`performance`, `errors`, `sessions`), with report generation and deletion rights restricted to authorized sections.
+  - **Viewer**: Read-only baseline visibility, restricting access to sensitive system details and management endpoints.
+  - **Guest**: Instant demo access bypassing authentication to evaluate features in a non-destructive sandbox.
+  - Both server-side Express middleware (`requireAdmin`, `requirePermissions`, `requirePermissionsDelete`) and client-side UI guards enforce access boundaries.
+- **Server-Side PDF Reporting Pipeline**:
+  - The frontend captures live DOM metrics and user comments into a structured JSON payload (`dataSnapshot`).
+  - The backend dynamically generates a styled HTML document and passes it to headless Puppeteer Chromium instance with `--no-sandbox` flags.
+  - Synchronous PDF rendering is achieved using `{ waitUntil: 'load', timeout: 0 }`, writing the output file to disk and logging metadata to the `reports` table.
+- **Database Design Tradeoffs**:
+  - *Relational Tables + JSON Payload*: `activity_logs` stores high-level indexed columns (`event_type`, `url`, `ip_address`, `created_at`) alongside a flexible `payload` JSON column.
+  - *Tradeoff*: Avoids complex multi-table migrations for new telemetry event attributes while maintaining structured SQL queryability. While not as horizontally scalable as dedicated columnar OLAP systems (e.g. ClickHouse), it significantly reduces infrastructure complexity and operational overhead on lightweight servers.
+- **Performance & Resource Optimizations**:
+  - **Node Memory Constraints**: Configured with `--max-old-space-size=300` in PM2 to operate efficiently within a 1 vCPU / 2GB RAM budget, preventing OS paging and `kswapd0` CPU thrashing.
+  - **Connection Pooling**: Uses `mysql2/promise` connection pools with strict connection limits, avoiding socket exhaustion and memory bloat.
+  - **Canvas Memory Management**: Implements a global chart registry (`window.activeCharts`) with explicit `.destroy()` invocations before view transitions, preventing Canvas memory leaks in the browser.
+  - **Zero-FOUC Theme Initialization**: Theme preference is retrieved from `localStorage` in the `<head>` before DOM parsing to eliminate dark mode flickering.
+
+## Notable points about the project
+- **Granular Technographic & Environmental Fingerprinting**:
+  - Captures and displays extensive client capabilities, including CPU logical cores (`navigator.hardwareConcurrency`), device memory (`navigator.deviceMemory`), network downlink bandwidth, round-trip latency (RTT), display pixel ratios, touch compatibility, color scheme preference, and feature detection (cookies, JavaScript, images).
+- **Interactive User Journey & Session Replay Tracer**:
+  - Goes beyond static aggregates by reconstructing second-by-second user pathways. Visualizes mouse clicks with precise pixel coordinates and CSS selector paths, scroll milestones (depth percentages), idle state transitions, keyboard interactions, and client-side exceptions.
+- **Lightweight Zero-Framework Architecture**:
+  - Operates as a full-featured Single Page Application (SPA) without any heavy JavaScript frameworks or bundling steps (no Webpack, Vite, or Babel required). Serves pure vanilla JS and CSS, resulting in minimal load times and zero compilation overhead.
+- **Client-Side Sortable Metrics**:
+  - The per-page Web Vitals table features dynamic client-side sorting across all metric dimensions (LCP, INP, CLS, Page Path) with directional indicators and type-aware parsing.
+- **Automated Snapshot Reporting System**:
+  - Merges quantitative telemetry with qualitative analyst commentary into clean, audit-ready PDF documents generated on demand.
+- **Built-In Guest Demo Mode**:
+  - Enables immediate, frictionless testing and evaluation without requiring manual account registration or database seeding.
