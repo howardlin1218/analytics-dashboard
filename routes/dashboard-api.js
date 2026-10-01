@@ -3,7 +3,7 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
     if (!req.session.user) return res.sendStatus(401);
-    if (req.session.user.role === 'viewer') return res.json({user: req.session.user});
+    if (req.session.user.role === 'viewer' || req.session.user.role === 'guest') return res.json({ user: req.session.user });
     
     const pool = req.app.get('pool');
     try {   
@@ -19,8 +19,7 @@ router.get('/', async (req, res) => {
             logs: rows
         });
     } catch (err) {
-        console.error('Database error:', err);
-        res.status(500).json({ error: 'Failed to fetch analytics data' });
+        res.json({ user: req.session.user, logs: [] });
     }
 });
 

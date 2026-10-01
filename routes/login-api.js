@@ -41,4 +41,16 @@ router.post('/logout', (req, res) => {
     req.session.destroy(() => res.json({ success: true }));
 });
 
+// POST /api/guest (or /api/log/guest)
+router.post('/guest', (req, res) => {
+    req.session.user = {
+        id: 0,
+        email: 'guest@demo.local',
+        displayName: 'guest',
+        role: 'guest',
+        permission: ['overview', 'performance', 'errors', 'sessions', 'reports']
+    };
+    res.json({ success: true, data: req.session.user });
+});
+
 module.exports = router;

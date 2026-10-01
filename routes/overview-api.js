@@ -1,29 +1,122 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
+
+// Helper to read fallback rows from analytics.jsonl
+function getLogsFromFile() {
+    const jsonlPath = path.join(__dirname, '../../analytics_collector/.logs/analytics.jsonl');
+    if (!fs.existsSync(jsonlPath)) return [];
+    try {
+        const fileContent = fs.readFileSync(jsonlPath, 'utf8');
+        const lines = fileContent.trim().split('\n').filter(Boolean);
+        return lines.map((line, idx) => {
+            try {
+                const parsed = JSON.parse(line);
+                return {
+                    id: idx + 1,
+                    event_type: parsed.type || 'unknown',
+                    url: parsed.url || 'unknown',
+                    ip_address: parsed.ip || '127.0.0.1',
+                    user_agent: parsed.technographics ? parsed.technographics.userAgent : 'unknown',
+                    payload: parsed,
+                    created_at: parsed.serverTimestamp || parsed.timestamp || new Date().toISOString()
+                };
+            } catch (e) { return null; }
+        }).filter(Boolean);
+    } catch (e) { return []; }
+}
+
+// Helper to merge DB and file rows (Prioritizes Database; falls back to JSONL file if DB is empty or unavailable)
+function getMergedLogs(dbRows, fileRows) {
+    if (Array.isArray(dbRows) && dbRows.length > 0) {
+        return dbRows;
+    }
+    return Array.isArray(fileRows) ? fileRows : [];
+}
+
+// Helper to extract siteId safely without crashing on non-URL strings
+function safeExtractSiteId(payload, rawUrl) {
+    if (payload && (payload.siteId || payload.site_id)) {
+        return payload.siteId || payload.site_id;
+    }
+    const targetUrl = (payload && payload.url) || rawUrl;
+    if (!targetUrl || targetUrl === 'unknown') return null;
+    try {
+        return new URL(targetUrl).hostname;
+    } catch (e) {
+        return targetUrl;
+    }
+}
 
 // Middleware: require analyst or super admin
 function requirePermissions(req, res, next) {
-    const user = req.session.user;
-        if (user.role === 'viewer') {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Access Denied: You do not have permission to view Overview data.' 
-            });
-        }
+    const user = req.session ? req.session.user : null;
+    if (!user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Please log in.' });
+    }
+    if (user.role === 'viewer') {
+        return res.status(403).json({ 
+            success: false, 
+            error: 'Access Denied: You do not have permission to view Overview data.' 
+        });
+    }
 
     next();
 }
 
+router.get('/sites', async (req, res) => {
+    try {
+        let dbRows = [];
+        try {
+            const pool = req.app.get('pool');
+            if (pool) {
+                const [rows] = await pool.query('SELECT DISTINCT url, payload FROM activity_logs');
+                dbRows = rows || [];
+            }
+        } catch (e) {}
+
+        const fileRows = (dbRows && dbRows.length > 0) ? [] : getLogsFromFile();
+        const combinedRows = getMergedLogs(dbRows, fileRows);
+
+        const siteSet = new Set();
+        combinedRows.forEach(row => {
+            let payload = {};
+            if (typeof row.payload === 'string') {
+                try { payload = JSON.parse(row.payload); } catch(e) {}
+            } else if (row.payload && typeof row.payload === 'object') {
+                payload = row.payload;
+            }
+            const sId = safeExtractSiteId(payload, row.url);
+            if (sId) siteSet.add(sId);
+        });
+        const sites = Array.from(siteSet).sort();
+        res.json({ success: true, sites });
+    } catch (err) {
+        console.error("Overview Sites Error:", err);
+        res.status(500).json({ error: "Failed to load sites" });
+    }
+});
+
 router.get('/', requirePermissions, async (req, res) => {
     try {
-        // 1. Fetch all your logs from the database
-        const pool = req.app.get('pool');
-        const [rows] = await pool.query(
-            'SELECT id, event_type, url, ip_address, user_agent, payload, created_at FROM activity_logs'
-        );
+        const selectedSite = req.query.siteId;
+        let dbRows = [];
+        try {
+            const pool = req.app.get('pool');
+            if (pool) {
+                const [rows] = await pool.query(
+                    'SELECT id, event_type, url, ip_address, user_agent, payload, created_at FROM activity_logs'
+                );
+                dbRows = rows || [];
+            }
+        } catch (e) {}
+
+        const fileRows = (dbRows && dbRows.length > 0) ? [] : getLogsFromFile();
+        const rows = getMergedLogs(dbRows, fileRows);
 
         // 2. Map the database rows into the JSON format expected by the logic
-        const logs = rows.map(row => {
+        let logs = rows.map(row => {
             let payloadData = {};
             
             // Safety check: Parse the payload if MySQL returns it as a string
@@ -48,6 +141,14 @@ router.get('/', requirePermissions, async (req, res) => {
                 ...payloadData              // Spread payload (session, timeOnPage, etc.)
             };
         });
+
+        // Filter by selected site if specified
+        if (selectedSite && selectedSite !== 'all') {
+            logs = logs.filter(log => {
+                const sId = safeExtractSiteId(log, log.url);
+                return sId === selectedSite;
+            });
+        }
 
         // --- PREPARE VARIABLES ---
         let totalPageviews = 0;
@@ -99,8 +200,8 @@ router.get('/', requirePermissions, async (req, res) => {
                 pageExitCount++;
             }
 
-            // 3. Handle "event" logs (For Total Events card)
-            if (log.type === 'event') {
+            // 3. Handle "event" and custom logs (For Total Events card)
+            if (log.type === 'event' || log.type === 'error' || log.event || ['click', 'scroll_depth', 'mousemove', 'keydown', 'keyup', 'idle_break_start', 'idle_break_end'].includes(log.type)) {
                 totalEvents++;
             }
         });
