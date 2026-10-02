@@ -14,12 +14,17 @@ const reportsRoute = require('./routes/reports-api');
 const mysql = require('mysql2/promise');
 const app = express();
 
-// const corsOptions = {
-//     // DO NOT use '*' here. Specify the exact frontend URL.
-//     origin: ['http://127.0.0.1:5502', 'http://localhost:5502'],
-//     credentials: true, // This allows the 'include' mode from fetch
-//     optionsSuccessStatus: 200
-// };
+const corsOptions = {
+    // Automatically adapts: production domain in prod, local dev patterns in dev
+    origin: config.isProduction 
+        ? ['https://reporting.howard1218.site'] 
+        : [
+            /^http:\/\/127\.0\.0\.1(:\d+)?$/, 
+            /^http:\/\/localhost(:\d+)?$/
+        ],
+    credentials: true, // This allows the 'include' mode from fetch
+    optionsSuccessStatus: 200
+};
 app.use(cors(corsOptions));
 app.use(express.json());
 app.set('trust proxy', 'loopback');
@@ -30,8 +35,10 @@ app.use(session({
     saveUninitialized: false,
     cookie : {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Set to false for local development to allow cookies over HTTP
-        sameSite: false, 
+        // In production: true (enforces HTTPS-only cookies).
+        // In dev: false (permits cookies over local HTTP).
+        secure: config.isProduction,
+        sameSite: config.isProduction ? 'strict' : 'lax', 
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
