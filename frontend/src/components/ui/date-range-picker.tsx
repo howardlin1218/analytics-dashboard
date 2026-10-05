@@ -21,14 +21,14 @@ export function DateRangePicker() {
         isAllTime: false,
       }),
     },
-    // {
-    //   label: 'Yesterday',
-    //   getValue: () => ({
-    //     startDate: startOfDay(subDays(new Date(), 1)),
-    //     endDate: endOfDay(subDays(new Date(), 1)),
-    //     isAllTime: false,
-    //   }),
-    // },
+    {
+      label: 'Yesterday',
+      getValue: () => ({
+        startDate: startOfDay(subDays(new Date(), 1)),
+        endDate: endOfDay(subDays(new Date(), 1)),
+        isAllTime: false,
+      }),
+    },
     {
       label: 'Last 7 Days',
       getValue: () => ({

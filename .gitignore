@@ -18,6 +18,13 @@ yarn-error.log*
 # config
 config.js
 
-app.js
 
-api.js
+# Compiled frontend output (built by GitHub Actions)
+public_html/assets/
+public_html/index.html
+frontend/dist/
+
+# Generated PDF reports
+public_html/reports/
+
+*.md

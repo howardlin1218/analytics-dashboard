@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "clean:assets": "node -e \"const fs=require('fs');const p='../public_html/assets';if(fs.existsSync(p))fs.rmSync(p,{recursive:true,force:true});\"",
+    "build": "npm run clean:assets && tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run"

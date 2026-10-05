@@ -1,6 +1,7 @@
-// Auto-detect API base: uses http://<hostname>:3006 when running in standalone mode on other ports,
-// or empty string when running with Vite proxy or production behind reverse proxy.
-const isDevPort = typeof window !== 'undefined' && window.location.port && window.location.port !== '3006';
+// Auto-detect API base: uses http://<hostname>:3006 when running in local development mode,
+// or empty string in production builds to ensure same-origin relative URLs (/api/...).
+const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV;
+const isDevPort = isDev && typeof window !== 'undefined' && window.location.port && window.location.port !== '3006';
 export const API_BASE = isDevPort ? `http://${window.location.hostname}:3006` : '';
 
 export async function apiClient<T>(
