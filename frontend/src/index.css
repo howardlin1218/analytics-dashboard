@@ -58,3 +58,52 @@
     @apply bg-background text-foreground min-h-screen font-sans antialiased;
   }
 }
+
+/* Custom theme-aware scrollbar utility */
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 9999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+  }
+
+  /* Dark mode scrollbar */
+  :is(.dark, .dark-theme) .custom-scrollbar,
+  .dark .custom-scrollbar,
+  .dark-theme .custom-scrollbar {
+    scrollbar-color: #334155 transparent;
+  }
+
+  :is(.dark, .dark-theme) .custom-scrollbar::-webkit-scrollbar-thumb,
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb,
+  .dark-theme .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #334155;
+  }
+
+  :is(.dark, .dark-theme) .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+  .dark-theme .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #475569;
+  }
+}

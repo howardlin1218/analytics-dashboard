@@ -106,7 +106,7 @@ export function OverviewView() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Overview</h1>
-        <p className="text-sm text-muted-foreground">High-level traffic summary, activity metrics, and top endpoints.</p>
+        {/* <p className="text-sm text-muted-foreground">High-level traffic summary, activity metrics, and top endpoints.</p> */}
       </div>
 
       {/* Summary Cards */}

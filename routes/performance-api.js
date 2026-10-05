@@ -65,11 +65,24 @@ function requirePermissions(req, res, next) {
 router.get('/', requirePermissions, async (req, res) => {
     try {
         const selectedSite = req.query.siteId;
+        const { startDate, endDate } = req.query;
+
+        let start = null;
+        let end = null;
+        if (startDate) {
+            const parsedStart = new Date(startDate);
+            if (!isNaN(parsedStart.getTime())) start = parsedStart;
+        }
+        if (endDate) {
+            const parsedEnd = new Date(endDate);
+            if (!isNaN(parsedEnd.getTime())) end = parsedEnd;
+        }
+
         let dbRows = [];
         try {
             const pool = req.app.get('pool');
             const [rows] = await pool.query(
-                'SELECT event_type, url, payload FROM activity_logs WHERE event_type IN ("pageview", "page_exit")'
+                'SELECT event_type, url, payload, created_at FROM activity_logs WHERE event_type IN ("pageview", "page_exit")'
             );
             dbRows = rows || [];
         } catch(e) {}
@@ -84,6 +97,21 @@ router.get('/', requirePermissions, async (req, res) => {
                 try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch(e) {}
                 const sId = safeExtractSiteId(payload, row.url);
                 return sId === selectedSite;
+            });
+        }
+
+        // Filter by date range if specified
+        if (start || end) {
+            filteredRows = filteredRows.filter(row => {
+                let payload = {};
+                try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch(e) {}
+                const ts = payload.serverTimestamp || payload.timestamp || row.created_at;
+                if (!ts) return true;
+                const d = new Date(ts);
+                if (isNaN(d.getTime())) return true;
+                if (start && d < start) return false;
+                if (end && d > end) return false;
+                return true;
             });
         }
 

@@ -46,16 +46,16 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-background text-foreground overflow-hidden">
       <Navbar onToggleSidebar={() => setMobileOpen((prev) => !prev)} />
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar
           collapsed={collapsed}
           onToggleCollapse={toggleCollapse}
           mobileOpen={mobileOpen}
           onCloseMobile={() => setMobileOpen(false)}
         />
-        <main id="app-viewport" className="flex-1 overflow-x-hidden p-4 md:p-6 lg:p-8">
+        <main id="app-viewport" className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 custom-scrollbar">
           <Outlet />
         </main>
       </div>

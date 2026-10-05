@@ -1,12 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useFilters } from '../context/FilterContext';
 import { apiClient } from './client';
 import { ReportsResponse } from '../types/api';
 
 export const useReports = () => {
+  const { dateRange } = useFilters();
+
   return useQuery({
-    queryKey: ['reports'],
+    queryKey: [
+      'reports',
+      dateRange.isAllTime ? 'all-time' : dateRange.startDate.toISOString(),
+      dateRange.isAllTime ? 'all-time' : dateRange.endDate.toISOString(),
+    ],
     queryFn: async (): Promise<ReportsResponse> => {
-      return await apiClient<ReportsResponse>('/api/reports');
+      const params = new URLSearchParams();
+      if (!dateRange.isAllTime) {
+        params.set('startDate', dateRange.startDate.toISOString());
+        params.set('endDate', dateRange.endDate.toISOString());
+      }
+
+      return await apiClient<ReportsResponse>(`/api/reports?${params.toString()}`);
     },
     staleTime: 30_000,
   });

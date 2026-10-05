@@ -127,9 +127,9 @@ export function ErrorsView() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Error Tracking</h1>
-          <p className="text-sm text-muted-foreground">
+          {/* <p className="text-sm text-muted-foreground">
             Aggregated uncaught runtime exceptions, network failures, and stack traces.
-          </p>
+          </p> */}
         </div>
         <Button
           onClick={() => setIsReportModalOpen(true)}

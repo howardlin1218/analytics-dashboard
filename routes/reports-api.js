@@ -198,6 +198,18 @@ router.get('/', async (req, res) => {
         const pool = req.app.get('pool');
         if (!pool) return res.json({ success: true, data: [] });
         
+        const { startDate, endDate } = req.query;
+        let start = null;
+        let end = null;
+        if (startDate) {
+            const parsedStart = new Date(startDate);
+            if (!isNaN(parsedStart.getTime())) start = parsedStart;
+        }
+        if (endDate) {
+            const parsedEnd = new Date(endDate);
+            if (!isNaN(parsedEnd.getTime())) end = parsedEnd;
+        }
+
         // Fetch reports. If you have a users table, you could JOIN it here to get the author's actual name.
         const [reports] = await pool.query(`
             SELECT id, title, section, author_id, comments, file_path, created_at 
@@ -205,7 +217,19 @@ router.get('/', async (req, res) => {
             ORDER BY created_at DESC
         `);
 
-        res.json({ success: true, data: reports });
+        let filteredReports = reports || [];
+        if (start || end) {
+            filteredReports = filteredReports.filter(r => {
+                if (!r.created_at) return true;
+                const d = new Date(r.created_at);
+                if (isNaN(d.getTime())) return true;
+                if (start && d < start) return false;
+                if (end && d > end) return false;
+                return true;
+            });
+        }
+
+        res.json({ success: true, data: filteredReports });
 
     } catch (err) {
         console.error('Fetch Reports Error:', err.message);

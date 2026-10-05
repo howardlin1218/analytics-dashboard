@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Users, FileText, Search, Monitor, Smartphone, Globe, Shield, Wifi, Cpu, Layers } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, FileText, Search, Monitor, Smartphone, Globe, Shield, Wifi, Cpu, Layers, Maximize2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSessions, useSessionDetail } from '../api/useSessions';
 import { AccessDenied } from '../components/common/AccessDenied';
 import { EmptyState } from '../components/common/EmptyState';
 import { ReportModal } from '../components/common/ReportModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { Skeleton } from '../components/ui/skeleton';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -17,11 +18,22 @@ export function SessionsView() {
   const { data: sessionsData, isLoading: isListLoading, isError: isListError } = useSessions();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
 
   const {
     data: detailData,
     isLoading: isDetailLoading,
   } = useSessionDetail(selectedSessionId);
+
+  const sessions = sessionsData?.data || [];
+  const profile = detailData?.profile;
+  const timeline = detailData?.timeline || [];
+
+  useEffect(() => {
+    if (selectedSessionId && sessions.length > 0 && !sessions.some((s) => s.session_id === selectedSessionId)) {
+      setSelectedSessionId(null);
+    }
+  }, [sessions, selectedSessionId]);
 
   // Role Guard
   const role = user?.role || 'viewer';
@@ -34,10 +46,6 @@ export function SessionsView() {
   if (!hasAccess) {
     return <AccessDenied requiredRole="Super Admin, Sessions Analyst" />;
   }
-
-  const sessions = sessionsData?.data || [];
-  const profile = detailData?.profile;
-  const timeline = detailData?.timeline || [];
 
   // Snapshot builder for report generator
   const buildReportDataSnapshot = () => {
@@ -217,13 +225,13 @@ export function SessionsView() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="flex-1 min-h-0 flex flex-col space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">User Sessions (Tracer)</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">User Sessions</h1>
+          {/* <p className="text-sm text-muted-foreground">
             Explore active user sessions, device technographics, and step-by-step user journeys.
-          </p>
+          </p> */}
         </div>
         <Button
           onClick={() => setIsReportModalOpen(true)}
@@ -233,16 +241,19 @@ export function SessionsView() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 lg:overflow-hidden">
         {/* Sessions List Column */}
-        <div className="lg:col-span-4 space-y-3">
-          <div className="flex items-center justify-between pb-1">
+        <div className="lg:col-span-4 flex flex-col h-full min-h-0 space-y-2">
+          {/* <div className="flex items-center justify-between pb-1">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Logged Sessions ({sessions.length})
             </span>
-          </div>
+          </div> */}
 
-          <div className="space-y-2 max-h-[750px] overflow-y-auto pr-1" id="session-list">
+          <div
+            className="flex-1 min-h-0 space-y-2 overflow-y-auto custom-scrollbar pr-1 max-h-[400px] lg:max-h-none"
+            id="session-list"
+          >
             {isListLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-20 w-full rounded-xl" />
@@ -292,33 +303,33 @@ export function SessionsView() {
         </div>
 
         {/* Timeline & Profile Detail Column */}
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 flex flex-col h-full min-h-0">
           {!selectedSessionId ? (
-            <Card className="p-16 text-center border-dashed flex flex-col items-center justify-center text-muted-foreground">
+            <Card className="h-full flex flex-col items-center justify-center p-8 sm:p-16 text-center border-dashed text-muted-foreground min-h-[300px]">
               <Search className="w-10 h-10 mb-3 text-muted-foreground" />
               <h3 className="text-base font-semibold text-foreground mb-1">No Session Selected</h3>
               <p className="text-sm max-w-sm">Select a user session from the list on the left to trace their journey.</p>
             </Card>
           ) : isDetailLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-64 w-full rounded-xl" />
-              <Skeleton className="h-96 w-full rounded-xl" />
+            <div className="space-y-3 h-full flex flex-col">
+              <Skeleton className="h-44 w-full rounded-xl shrink-0" />
+              <Skeleton className="flex-1 w-full rounded-xl min-h-[250px]" />
             </div>
           ) : !profile ? (
-            <Card className="p-12 text-center text-muted-foreground">
+            <Card className="h-full flex items-center justify-center p-12 text-center text-muted-foreground min-h-[300px]">
               No detailed profile data available for this session.
             </Card>
           ) : (
-            <div className="space-y-6">
+            <div className="flex-1 min-h-0 flex flex-col h-full space-y-3">
               {/* Profile Card */}
-              <Card className="shadow-sm border-border overflow-hidden session-profile-card">
-                <CardHeader className="bg-muted pb-4 border-b border-border">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center text-primary shrink-0 text-2xl">
+              <Card className="shadow-sm border-border overflow-hidden shrink-0 session-profile-card">
+                <CardHeader className="bg-muted p-3.5 sm:px-5 border-b border-border">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-primary shrink-0 text-xl">
                       {profile.deviceType === 'Mobile' ? '📱' : '💻'}
                     </div>
                     <div className="flex-1 min-w-0 profile-title">
-                      <h3 className="text-lg font-bold truncate">Session: {profile.id}</h3>
+                      <h3 className="text-base font-bold truncate">Session: {profile.id}</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         IP: <strong className="text-foreground">{profile.ip}</strong> • Duration:{' '}
                         <strong className="text-foreground">
@@ -326,7 +337,7 @@ export function SessionsView() {
                         </strong>{' '}
                         • {profile.totalActions} actions
                       </p>
-                      <div className="flex items-center gap-1.5 mt-2">
+                      <div className="flex items-center gap-1.5 mt-1.5">
                         {profile.capabilities.js ? (
                           <Badge variant="success" className="text-[10px]">JS</Badge>
                         ) : (
@@ -345,58 +356,58 @@ export function SessionsView() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-4 profile-stats-grid">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">OS / Platform</span>
+                <CardContent className="p-3 sm:px-5 profile-stats-grid">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 text-xs">
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">OS / Platform</span>
                       <strong className="truncate block val">{profile.os}</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Browser</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Browser</span>
                       <strong className="truncate block val">{profile.browser}</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Hardware</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Hardware</span>
                       <strong className="truncate block val">
                         {profile.cores !== 'Unknown' ? `${profile.cores} Cores / ${profile.memory}GB` : 'Unknown'}
                       </strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Screen Res</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Screen Res</span>
                       <strong className="truncate block val">{profile.screen} (@{profile.pixelRatio}x)</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Viewport</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Viewport</span>
                       <strong className="truncate block val">{profile.viewport}</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Timezone</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Timezone</span>
                       <strong className="truncate block val">{profile.timezone}</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Theme</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Theme</span>
                       <strong className="capitalize block val">{profile.colorScheme}</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Connection</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Connection</span>
                       <strong className="truncate block val">
                         {profile.network !== 'Unknown' ? `${profile.network} (${profile.downlink}M)` : 'Unknown'}
                       </strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Language</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Language</span>
                       <strong className="truncate block val">{profile.language}</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Unique Pages</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Unique Pages</span>
                       <strong className="block val">{profile.uniquePages}</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Max Scroll</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Max Scroll</span>
                       <strong className="block val">{profile.maxScroll}%</strong>
                     </div>
-                    <div className="bg-muted p-2.5 rounded-lg border border-border stat-box">
-                      <span className="text-[11px] text-muted-foreground block mb-0.5 label">Avg LCP</span>
+                    <div className="bg-muted p-2 rounded-lg border border-border stat-box">
+                      <span className="text-[10px] text-muted-foreground block mb-0.5 label">Avg LCP</span>
                       <strong className={cn('block val', profile.avgLcp > 2500 ? 'text-destructive' : 'text-green-600')}>
                         {profile.avgLcp ? `${profile.avgLcp}ms` : 'N/A'}
                       </strong>
@@ -406,13 +417,22 @@ export function SessionsView() {
               </Card>
 
               {/* Chronological Journey Timeline */}
-              <Card className="shadow-sm border-border">
-                <CardHeader className="pb-3 border-b border-border">
+              <Card className="shadow-sm border-border flex flex-col flex-1 min-h-0 overflow-hidden max-h-[450px] lg:max-h-none">
+                <CardHeader className="py-2.5 px-4 sm:px-6 border-b border-border shrink-0 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-base font-bold">Chronological Journey ({timeline.length} events)</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs shrink-0"
+                    onClick={() => setIsJourneyModalOpen(true)}
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    Expand Journey
+                  </Button>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar max-h-[450px] lg:max-h-none">
                   {timeline.length > 0 ? (
-                    <div className="space-y-4 timeline-track">
+                    <div className="space-y-4 timeline-track pl-2">
                       {timeline.map((event, index) => renderTimelineEvent(event, index))}
                     </div>
                   ) : (
@@ -433,6 +453,35 @@ export function SessionsView() {
         section="sessions"
         dataSnapshotBuilder={buildReportDataSnapshot}
       />
+
+      {/* Expanded Journey Modal / Popup */}
+      <Dialog open={isJourneyModalOpen} onOpenChange={setIsJourneyModalOpen}>
+        <DialogContent className="sm:max-w-4xl max-w-4xl max-h-[85vh] flex flex-col p-6">
+          <DialogHeader className="pb-3 border-b border-border shrink-0">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              Chronological Journey
+              <Badge variant="secondary" className="font-mono text-xs">
+                {timeline.length} events
+              </Badge>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              {profile ? `Detailed event timeline for session ${profile.id} (${profile.ip})` : 'Session activity timeline'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-6 py-4">
+            {timeline.length > 0 ? (
+              <div className="space-y-4 timeline-track pl-2">
+                {timeline.map((event, index) => renderTimelineEvent(event, index))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                No activity logs recorded for this session.
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

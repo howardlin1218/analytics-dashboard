@@ -1,5 +1,4 @@
-import React from 'react';
-import { LogOut, Menu, User as UserIcon } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SiteSelector } from './SiteSelector';
 import { DateRangePicker } from '../ui/date-range-picker';
@@ -15,8 +14,8 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
   const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 w-full items-center justify-between border-b border-border bg-card px-4">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 flex h-14 w-full items-center border-b border-border bg-card">
+      <div className="flex flex-1 items-center h-full">
         {onToggleSidebar && (
           <Button
             variant="ghost"
@@ -29,25 +28,18 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
           </Button>
         )}
 
-        <div className="flex items-center gap-2 font-semibold tracking-tight text-foreground">
-          <img
-            src="/favicons/google-analytics-black.png"
-            alt="Analytics"
-            className="h-6 w-6 object-contain dark:invert"
-            onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = 'none';
-            }}
-          />
-          <span className="hidden sm:inline-block text-base font-bold text-primary">
-            Analytics
-          </span>
-        </div>
+        <span className="hidden sm:flex items-center justify-center text-base font-bold text-primary w-56 border-r border-border h-full">
+          tracky
+        </span>
 
-        <div className="hidden sm:block h-5 w-px bg-border mx-1" />
+        {/* <div className="hidden sm:block self-stretch w-px bg-border" /> */}
 
-        <SiteSelector />
-        <div className="hidden md:block">
-          <DateRangePicker />
+        <div className="flex justify-center items-center gap-2 md:px-6 lg:px-8">
+          <SiteSelector />
+        
+          <div className="hidden md:block">
+            <DateRangePicker />
+          </div>
         </div>
       </div>
 
@@ -60,17 +52,17 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
 
         {user && (
           <div className="flex items-center gap-2 pl-2 border-l border-border">
-            <div className="hidden lg:flex flex-col items-end text-right">
-              <span className="text-xs font-semibold text-foreground truncate max-w-[150px]">
+            <div className="hidden lg:flex flex-row gap-2 justify-center items-center">
+              <span className="text-base font-semibold text-foreground truncate max-w-[150px]">
                 {user.displayName || user.email}
               </span>
               <div className="flex items-center gap-1">
-                <RoleBadge role={user.role} className="text-[10px] py-0 px-1.5" />
-                {user.role === 'analyst' && user.permission && user.permission.length > 0 && (
+                <RoleBadge role={user.role} className="text-sm py-0 px-1.5" />
+                {/* {user.role === 'analyst' && user.permission && user.permission.length > 0 && (
                   <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
                     ({user.permission.join(', ')})
                   </span>
-                )}
+                )} */}
               </div>
             </div>
 

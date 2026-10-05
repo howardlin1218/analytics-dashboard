@@ -7,14 +7,18 @@ import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from '../components/ui/toast';
+import { useFilters } from '../context/FilterContext';
+import { filterItemsByDateRange } from '../utils/dateFilter';
 import { ReportItem } from '../types/api';
 
 export function ReportsView() {
   const { user } = useAuth();
+  const { dateRange } = useFilters();
   const { data, isLoading, isError } = useReports();
   const deleteMutation = useDeleteReport();
 
-  const reports = data?.data || [];
+  const rawReports = data?.data || [];
+  const reports = filterItemsByDateRange(rawReports, dateRange);
 
   const handleDelete = async (report: ReportItem) => {
     if (!window.confirm(`Are you sure you want to delete "${report.title}"? This cannot be undone.`)) {

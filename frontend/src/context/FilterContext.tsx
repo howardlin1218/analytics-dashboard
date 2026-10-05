@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { subDays, format, parseISO, isValid, endOfDay, startOfDay } from 'date-fns';
+import React, { createContext, useContext, useState } from 'react';
+import { subDays, endOfDay, startOfDay } from 'date-fns';
 
 export interface DateRange {
   startDate: Date;
   endDate: Date;
+  isAllTime?: boolean;
 }
 
 export interface FilterContextType {
@@ -17,56 +17,43 @@ export interface FilterContextType {
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  // Initialize site from URL or localStorage or default to 'all'
+  // Initialize site from localStorage or default to 'all'
   const [selectedSite, setSelectedSiteState] = useState<string>(() => {
-    const fromUrl = searchParams.get('siteId');
-    if (fromUrl) return fromUrl;
     const fromStorage = localStorage.getItem('_dashboard_selected_site');
     return fromStorage || 'all';
   });
 
-  // Initialize date range from URL or default to Last 30 Days (Stage F1)
+  // Initialize date range from localStorage or default to Last 30 Days
   const [dateRange, setDateRangeState] = useState<DateRange>(() => {
-    const startParam = searchParams.get('startDate');
-    const endParam = searchParams.get('endDate');
-
-    const end = endParam && isValid(parseISO(endParam)) ? endOfDay(parseISO(endParam)) : endOfDay(new Date());
-    const start = startParam && isValid(parseISO(startParam)) ? startOfDay(parseISO(startParam)) : startOfDay(subDays(end, 30));
-
-    return { startDate: start, endDate: end };
+    try {
+      const stored = localStorage.getItem('_dashboard_date_range');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          startDate: new Date(parsed.startDate),
+          endDate: new Date(parsed.endDate),
+          isAllTime: !!parsed.isAllTime,
+        };
+      }
+    } catch { /* ignore corrupt data */ }
+    const end = endOfDay(new Date());
+    const start = startOfDay(subDays(end, 30));
+    return { startDate: start, endDate: end, isAllTime: false };
   });
 
-  // Sync state to URL search parameters and localStorage
   const setSelectedSite = (site: string) => {
     setSelectedSiteState(site);
     localStorage.setItem('_dashboard_selected_site', site);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (site === 'all') next.delete('siteId');
-      else next.set('siteId', site);
-      return next;
-    });
   };
 
   const setDateRange = (range: DateRange) => {
     setDateRangeState(range);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('startDate', format(range.startDate, 'yyyy-MM-dd'));
-      next.set('endDate', format(range.endDate, 'yyyy-MM-dd'));
-      return next;
-    });
+    localStorage.setItem('_dashboard_date_range', JSON.stringify({
+      startDate: range.startDate.toISOString(),
+      endDate: range.endDate.toISOString(),
+      isAllTime: !!range.isAllTime,
+    }));
   };
-
-  // Watch URL params if updated externally (e.g. back/forward navigation)
-  useEffect(() => {
-    const siteParam = searchParams.get('siteId') || 'all';
-    if (siteParam !== selectedSite) {
-      setSelectedSiteState(siteParam);
-    }
-  }, [searchParams, selectedSite]);
 
   return (
     <FilterContext.Provider value={{ selectedSite, setSelectedSite, dateRange, setDateRange }}>
@@ -75,8 +62,18 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   );
 };
 
+const defaultFilterContext: FilterContextType = {
+  selectedSite: 'all',
+  setSelectedSite: () => {},
+  dateRange: {
+    startDate: startOfDay(subDays(new Date(), 30)),
+    endDate: endOfDay(new Date()),
+    isAllTime: false,
+  },
+  setDateRange: () => {},
+};
+
 export const useFilters = () => {
   const context = useContext(FilterContext);
-  if (!context) throw new Error('useFilters must be used within FilterProvider');
-  return context;
+  return context || defaultFilterContext;
 };

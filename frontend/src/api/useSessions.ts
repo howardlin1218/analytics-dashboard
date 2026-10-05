@@ -4,15 +4,25 @@ import { apiClient } from './client';
 import { SessionsListResponse, SessionDetailResponse } from '../types/api';
 
 export const useSessions = () => {
-  const { selectedSite } = useFilters();
+  const { selectedSite, dateRange } = useFilters();
 
   return useQuery({
-    queryKey: ['sessions', selectedSite],
+    queryKey: [
+      'sessions',
+      selectedSite,
+      dateRange.isAllTime ? 'all-time' : dateRange.startDate.toISOString(),
+      dateRange.isAllTime ? 'all-time' : dateRange.endDate.toISOString(),
+    ],
     queryFn: async (): Promise<SessionsListResponse> => {
       const params = new URLSearchParams();
       if (selectedSite && selectedSite !== 'all') {
         params.set('siteId', selectedSite);
       }
+      if (!dateRange.isAllTime) {
+        params.set('startDate', dateRange.startDate.toISOString());
+        params.set('endDate', dateRange.endDate.toISOString());
+      }
+
       return await apiClient<SessionsListResponse>(`/api/sessions?${params.toString()}`);
     },
     staleTime: 30_000,

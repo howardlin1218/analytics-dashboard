@@ -69,4 +69,25 @@ describe('DateRangePicker & FilterContext (Stage F1)', () => {
       expect(screen.getByTestId('date-range-display')).toHaveTextContent(`${expectedStart} to ${expectedEnd}`);
     });
   });
+
+  it('updates date range when All Time preset is clicked', async () => {
+    render(
+      <MemoryRouter>
+        <FilterProvider>
+          <DateRangePicker />
+          <TestConsumer />
+        </FilterProvider>
+      </MemoryRouter>
+    );
+
+    const trigger = screen.getByRole('button', { name: /select date range/i });
+    fireEvent.click(trigger);
+
+    expect(screen.getByText('All Time')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('All Time'));
+
+    await waitFor(() => {
+      expect(trigger).toHaveTextContent('All Time');
+    });
+  });
 });

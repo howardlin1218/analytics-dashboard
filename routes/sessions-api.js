@@ -100,6 +100,19 @@ function parseUserAgent(uaString) {
 router.get('/', requirePermissions, async (req, res) => {
     try {
         const selectedSite = req.query.siteId;
+        const { startDate, endDate } = req.query;
+
+        let start = null;
+        let end = null;
+        if (startDate) {
+            const parsedStart = new Date(startDate);
+            if (!isNaN(parsedStart.getTime())) start = parsedStart;
+        }
+        if (endDate) {
+            const parsedEnd = new Date(endDate);
+            if (!isNaN(parsedEnd.getTime())) end = parsedEnd;
+        }
+
         let dbRows = [];
         try {
             const pool = req.app.get('pool');
@@ -121,12 +134,24 @@ router.get('/', requirePermissions, async (req, res) => {
                 session_id: payload.session || payload.sessionId,
                 siteId: safeExtractSiteId(payload, row.url),
                 ip_address: row.ip_address,
-                created_at: row.created_at
+                created_at: payload.serverTimestamp || payload.timestamp || row.created_at
             };
         });
 
         if (selectedSite && selectedSite !== 'all') {
             logs = logs.filter(l => l.siteId === selectedSite);
+        }
+
+        // Filter by date range if specified
+        if (start || end) {
+            logs = logs.filter(l => {
+                if (!l.created_at) return true;
+                const d = new Date(l.created_at);
+                if (isNaN(d.getTime())) return true;
+                if (start && d < start) return false;
+                if (end && d > end) return false;
+                return true;
+            });
         }
 
         const sessionMap = {};

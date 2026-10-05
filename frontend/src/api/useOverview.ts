@@ -19,14 +19,21 @@ export const useOverview = () => {
   const { selectedSite, dateRange } = useFilters();
 
   return useQuery({
-    queryKey: ['overview', selectedSite, dateRange.startDate.toISOString(), dateRange.endDate.toISOString()],
+    queryKey: [
+      'overview',
+      selectedSite,
+      dateRange.isAllTime ? 'all-time' : dateRange.startDate.toISOString(),
+      dateRange.isAllTime ? 'all-time' : dateRange.endDate.toISOString(),
+    ],
     queryFn: async (): Promise<OverviewResponse> => {
       const params = new URLSearchParams();
       if (selectedSite && selectedSite !== 'all') {
         params.set('siteId', selectedSite);
       }
-      params.set('startDate', dateRange.startDate.toISOString());
-      params.set('endDate', dateRange.endDate.toISOString());
+      if (!dateRange.isAllTime) {
+        params.set('startDate', dateRange.startDate.toISOString());
+        params.set('endDate', dateRange.endDate.toISOString());
+      }
 
       const data = await apiClient<OverviewResponse>(`/api/overview?${params.toString()}`);
 

@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { useFilters } from '../../context/FilterContext';
 import { Button } from './button';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import { cn } from '../../utils/cn';
 
 export function DateRangePicker() {
   const { dateRange, setDateRange } = useFilters();
@@ -17,20 +18,23 @@ export function DateRangePicker() {
       getValue: () => ({
         startDate: startOfDay(new Date()),
         endDate: endOfDay(new Date()),
+        isAllTime: false,
       }),
     },
-    {
-      label: 'Yesterday',
-      getValue: () => ({
-        startDate: startOfDay(subDays(new Date(), 1)),
-        endDate: endOfDay(subDays(new Date(), 1)),
-      }),
-    },
+    // {
+    //   label: 'Yesterday',
+    //   getValue: () => ({
+    //     startDate: startOfDay(subDays(new Date(), 1)),
+    //     endDate: endOfDay(subDays(new Date(), 1)),
+    //     isAllTime: false,
+    //   }),
+    // },
     {
       label: 'Last 7 Days',
       getValue: () => ({
         startDate: startOfDay(subDays(new Date(), 7)),
         endDate: endOfDay(new Date()),
+        isAllTime: false,
       }),
     },
     {
@@ -38,6 +42,15 @@ export function DateRangePicker() {
       getValue: () => ({
         startDate: startOfDay(subDays(new Date(), 30)),
         endDate: endOfDay(new Date()),
+        isAllTime: false,
+      }),
+    },
+    {
+      label: 'All Time',
+      getValue: () => ({
+        startDate: new Date(0),
+        endDate: endOfDay(new Date()),
+        isAllTime: true,
       }),
     },
   ];
@@ -46,7 +59,7 @@ export function DateRangePicker() {
     const s = parseISO(customStart);
     const e = parseISO(customEnd);
     if (isValid(s) && isValid(e) && s <= e) {
-      setDateRange({ startDate: startOfDay(s), endDate: endOfDay(e) });
+      setDateRange({ startDate: startOfDay(s), endDate: endOfDay(e), isAllTime: false });
       setIsOpen(false);
     }
   };
@@ -62,7 +75,9 @@ export function DateRangePicker() {
           >
             <CalendarIcon className="w-4 h-4 text-muted-foreground" />
             <span className="whitespace-nowrap">
-              {format(dateRange.startDate, 'MMM d, yyyy')} - {format(dateRange.endDate, 'MMM d, yyyy')}
+              {dateRange.isAllTime
+                ? 'All Time'
+                : `${format(dateRange.startDate, 'MMM d, yyyy')} - ${format(dateRange.endDate, 'MMM d, yyyy')}`}
             </span>
             <ChevronDown className="w-3.5 h-3.5 opacity-60" />
           </Button>
@@ -79,12 +94,17 @@ export function DateRangePicker() {
                     key={preset.label}
                     variant="ghost"
                     size="sm"
-                    className="justify-start text-xs font-medium hover:bg-accent"
+                    className={cn(
+                      'justify-start text-xs font-medium hover:bg-accent',
+                      preset.label === 'All Time' && 'col-span-1'
+                    )}
                     onClick={() => {
                       const range = preset.getValue();
                       setDateRange(range);
-                      setCustomStart(format(range.startDate, 'yyyy-MM-dd'));
-                      setCustomEnd(format(range.endDate, 'yyyy-MM-dd'));
+                      if (!range.isAllTime) {
+                        setCustomStart(format(range.startDate, 'yyyy-MM-dd'));
+                        setCustomEnd(format(range.endDate, 'yyyy-MM-dd'));
+                      }
                       setIsOpen(false);
                     }}
                   >

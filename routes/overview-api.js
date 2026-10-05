@@ -101,6 +101,19 @@ router.get('/sites', async (req, res) => {
 router.get('/', requirePermissions, async (req, res) => {
     try {
         const selectedSite = req.query.siteId;
+        const { startDate, endDate } = req.query;
+
+        let start = null;
+        let end = null;
+        if (startDate) {
+            const parsedStart = new Date(startDate);
+            if (!isNaN(parsedStart.getTime())) start = parsedStart;
+        }
+        if (endDate) {
+            const parsedEnd = new Date(endDate);
+            if (!isNaN(parsedEnd.getTime())) end = parsedEnd;
+        }
+
         let dbRows = [];
         try {
             const pool = req.app.get('pool');
@@ -150,6 +163,19 @@ router.get('/', requirePermissions, async (req, res) => {
             });
         }
 
+        // Filter by date range if specified
+        if (start || end) {
+            logs = logs.filter(log => {
+                const ts = log.serverTimestamp || log.timestamp || log.created_at;
+                if (!ts) return true;
+                const d = new Date(ts);
+                if (isNaN(d.getTime())) return true;
+                if (start && d < start) return false;
+                if (end && d > end) return false;
+                return true;
+            });
+        }
+
         // --- PREPARE VARIABLES ---
         let totalPageviews = 0;
         let totalEvents = 0;
@@ -159,6 +185,18 @@ router.get('/', requirePermissions, async (req, res) => {
         
         const viewsByDate = {}; // For the line chart
         const urlStats = {};    // For the top pages table
+
+        // If date range is provided, pre-populate day slots up to 90 days
+        if (start && end && start <= end) {
+            const cur = new Date(start);
+            let days = 0;
+            while (cur <= end && days <= 90) {
+                const dateString = cur.toISOString().split('T')[0];
+                viewsByDate[dateString] = 0;
+                cur.setUTCDate(cur.getUTCDate() + 1);
+                days++;
+            }
+        }
 
         // --- PROCESS THE LOGS ---
         logs.forEach(log => {
@@ -172,8 +210,9 @@ router.get('/', requirePermissions, async (req, res) => {
 
                 // -- Chart Data --
                 // Extract just the Date part (YYYY-MM-DD)
-                if (log.timestamp) {
-                    const dateString = new Date(log.timestamp).toISOString().split('T')[0];
+                const ts = log.serverTimestamp || log.timestamp || log.created_at;
+                if (ts) {
+                    const dateString = new Date(ts).toISOString().split('T')[0];
                     viewsByDate[dateString] = (viewsByDate[dateString] || 0) + 1;
                 }
 

@@ -20,7 +20,7 @@ export function LoginPage() {
     return <Navigate to="/overview" replace />;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsSubmitting(true);
@@ -54,8 +54,8 @@ export function LoginPage() {
       <Card className="w-full max-w-md shadow-xl border-border bg-card">
         <div className="h-1.5 w-full bg-primary rounded-t-xl" />
         <CardHeader className="text-center pb-2">
-          <CardTitle className="text-2xl font-bold tracking-tight">Analytics Dashboard</CardTitle>
-          <CardDescription>Sign in to view your reports and operational health</CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight">tracky</CardTitle>
+          <CardDescription>Sign in to access the dashboard</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           {errorMessage && (

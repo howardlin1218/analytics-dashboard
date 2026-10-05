@@ -99,6 +99,50 @@ export const handlers = [
     });
   }),
 
+  // Mock Session Detail
+  http.get('*/api/sessions/:sessionId', () => {
+    return HttpResponse.json({
+      success: true,
+      profile: {
+        id: 'sess-abc-123',
+        ip: '127.0.0.1',
+        totalDurationSecs: 300,
+        totalActions: 14,
+        deviceType: 'Desktop',
+        os: 'Windows',
+        browser: 'Chrome',
+        screen: '1920x1080',
+        viewport: '1920x920',
+        pixelRatio: 1,
+        cores: 8,
+        memory: 16,
+        timezone: 'UTC',
+        colorScheme: 'dark',
+        network: '4g',
+        downlink: 10,
+        language: 'en-US',
+        uniquePages: 3,
+        maxScroll: 85,
+        avgLcp: 1200,
+        capabilities: { js: true, cookies: true, images: true },
+      },
+      timeline: [
+        {
+          timestamp: '2026-09-30T20:00:00.000Z',
+          action: 'pageview',
+          url: 'https://example.com/home',
+          details: { title: 'Home Page' },
+        },
+        {
+          timestamp: '2026-09-30T20:01:00.000Z',
+          action: 'click',
+          url: 'https://example.com/home',
+          details: { text: 'Learn More', element: 'button#learn-more', x: 100, y: 200 },
+        },
+      ],
+    });
+  }),
+
   // Mock Reports
   http.get('*/api/reports', () => {
     return HttpResponse.json({

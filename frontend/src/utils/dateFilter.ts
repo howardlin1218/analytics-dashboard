@@ -6,6 +6,7 @@ export function filterItemsByDateRange<T extends { created_at?: string; timestam
   range: DateRange
 ): T[] {
   if (!Array.isArray(items)) return [];
+  if (range.isAllTime) return items;
   return items.filter((item) => {
     const rawDate = item.created_at || item.timestamp;
     if (!rawDate) return true;

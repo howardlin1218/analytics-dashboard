@@ -77,6 +77,19 @@ function requirePermissions(req, res, next) {
 router.get('/', requirePermissions, async (req, res) => {
     try {
         const selectedSite = req.query.siteId;
+        const { startDate, endDate } = req.query;
+
+        let start = null;
+        let end = null;
+        if (startDate) {
+            const parsedStart = new Date(startDate);
+            if (!isNaN(parsedStart.getTime())) start = parsedStart;
+        }
+        if (endDate) {
+            const parsedEnd = new Date(endDate);
+            if (!isNaN(parsedEnd.getTime())) end = parsedEnd;
+        }
+
         let dbRows = [];
         try {
             const pool = req.app.get('pool');
@@ -91,7 +104,7 @@ router.get('/', requirePermissions, async (req, res) => {
 
         let filteredRows = rows;
         if (selectedSite && selectedSite !== 'all') {
-            filteredRows = rows.filter(row => {
+            filteredRows = filteredRows.filter(row => {
                 let payload = {};
                 try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch(e) {}
                 const sId = safeExtractSiteId(payload, row.url);
@@ -99,9 +112,36 @@ router.get('/', requirePermissions, async (req, res) => {
             });
         }
 
+        // Filter by date range if specified
+        if (start || end) {
+            filteredRows = filteredRows.filter(row => {
+                let payload = {};
+                try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch(e) {}
+                const ts = payload.serverTimestamp || payload.timestamp || row.created_at;
+                if (!ts) return true;
+                const d = new Date(ts);
+                if (isNaN(d.getTime())) return true;
+                if (start && d < start) return false;
+                if (end && d > end) return false;
+                return true;
+            });
+        }
+
         // --- PREPARE VARIABLES ---
         const errorsByDate = {}; // For the trend line chart
         const groupedErrors = {}; // For the grouped table
+
+        // If date range is provided, pre-populate day slots up to 90 days
+        if (start && end && start <= end) {
+            const cur = new Date(start);
+            let days = 0;
+            while (cur <= end && days <= 90) {
+                const dateString = cur.toISOString().split('T')[0];
+                errorsByDate[dateString] = 0;
+                cur.setUTCDate(cur.getUTCDate() + 1);
+                days++;
+            }
+        }
 
         // --- PROCESS THE LOGS ---
         filteredRows.forEach(row => {
@@ -113,7 +153,7 @@ router.get('/', requirePermissions, async (req, res) => {
             }
 
             // 1. Build Chart Data (Group by Day)
-            const dateObj = new Date(row.created_at);
+            const dateObj = new Date(payload.serverTimestamp || payload.timestamp || row.created_at);
             const dateString = dateObj.toISOString().split('T')[0]; // e.g., "2026-03-14"
             errorsByDate[dateString] = (errorsByDate[dateString] || 0) + 1;
 
