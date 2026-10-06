@@ -64,6 +64,48 @@ export function PerformanceView() {
     return list;
   }, [data?.table, sortColumn, sortDirection]);
 
+  const vitals = data?.vitals || [];
+  const chartData = data?.chart || { labels: [], values: [] };
+
+  const barChartData = useMemo(
+    () => ({
+      labels: chartData.labels,
+      datasets: [
+        {
+          label: 'Number of Pageviews',
+          data: chartData.values,
+          backgroundColor: '#2563eb',
+          borderRadius: 4,
+        },
+      ],
+    }),
+    [chartData.labels, chartData.values]
+  );
+
+  const barChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: 'Load Time Distribution',
+          font: { size: 14, weight: 'bold' as const },
+        },
+      },
+      scales: {
+        x: { title: { display: true, text: 'Load Duration' } },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Pageviews' },
+          ticks: { precision: 0 },
+        },
+      },
+    }),
+    []
+  );
+
   if (!hasAccess) {
     return <AccessDenied requiredRole="Super Admin, Performance Analyst" />;
   }
@@ -97,42 +139,6 @@ export function PerformanceView() {
       />
     );
   }
-
-  const vitals = data?.vitals || [];
-  const chartData = data?.chart || { labels: [], values: [] };
-
-  const barChartData = {
-    labels: chartData.labels,
-    datasets: [
-      {
-        label: 'Number of Pageviews',
-        data: chartData.values,
-        backgroundColor: '#2563eb',
-        borderRadius: 4,
-      },
-    ],
-  };
-
-  const barChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: {
-        display: true,
-        text: 'Load Time Distribution',
-        font: { size: 14, weight: 'bold' as const },
-      },
-    },
-    scales: {
-      x: { title: { display: true, text: 'Load Duration' } },
-      y: {
-        beginAtZero: true,
-        title: { display: true, text: 'Pageviews' },
-        ticks: { precision: 0 },
-      },
-    },
-  };
 
   const getSortIcon = (column: SortColumn) => {
     if (sortColumn !== column) return <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/60 ml-1" />;

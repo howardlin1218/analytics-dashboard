@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { applyChartTheme } from '../../utils/chartSetup';

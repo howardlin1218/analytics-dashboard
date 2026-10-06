@@ -3,7 +3,7 @@ import { useFilters } from '../context/FilterContext';
 import { apiClient } from './client';
 import { ErrorsResponse } from '../types/api';
 
-export const useErrors = () => {
+export const useErrors = (options?: { enabled?: boolean }) => {
   const { selectedSite, dateRange } = useFilters();
 
   return useQuery({
@@ -13,7 +13,7 @@ export const useErrors = () => {
       dateRange.isAllTime ? 'all-time' : dateRange.startDate.toISOString(),
       dateRange.isAllTime ? 'all-time' : dateRange.endDate.toISOString(),
     ],
-    queryFn: async (): Promise<ErrorsResponse> => {
+    queryFn: async ({ signal }): Promise<ErrorsResponse> => {
       const params = new URLSearchParams();
       if (selectedSite && selectedSite !== 'all') {
         params.set('siteId', selectedSite);
@@ -23,8 +23,9 @@ export const useErrors = () => {
         params.set('endDate', dateRange.endDate.toISOString());
       }
 
-      return await apiClient<ErrorsResponse>(`/api/errors?${params.toString()}`);
+      return await apiClient<ErrorsResponse>(`/api/errors?${params.toString()}`, { signal });
     },
+    enabled: options?.enabled ?? true,
     staleTime: 30_000,
   });
 };

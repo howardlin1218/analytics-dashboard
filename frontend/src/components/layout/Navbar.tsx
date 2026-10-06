@@ -1,4 +1,4 @@
-import { LogOut, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SiteSelector } from './SiteSelector';
 import { DateRangePicker } from '../ui/date-range-picker';
@@ -43,18 +43,11 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
 
         <div className="flex justify-center items-center gap-2 md:px-6 lg:px-8">
           <SiteSelector />
-        
-          <div className="hidden md:block">
-            <DateRangePicker />
-          </div>
+          <DateRangePicker />
         </div>
       </div>
 
       <div className="flex items-center h-full gap-2 pr-4 md:pr-6 lg:pr-8">
-        <div className="md:hidden">
-          <DateRangePicker />
-        </div>
-
         <ThemeToggle />
 
         {user && (

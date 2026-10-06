@@ -26,31 +26,34 @@
     --radius: 0.5rem;
   }
 
-  /* Sleek Obsidian Black Dark Mode */
+  /* Sleek Obsidian Black Dark Mode (Obsidian black background & lighter black surfaces) */
   .dark, .dark-theme {
     --background: 0 0% 4%; /* #0a0a0a solid obsidian black */
     --foreground: 0 0% 98%; /* #fafafa solid crisp white */
-    --card: 0 0% 8%; /* #141414 solid deep obsidian card */
+    --card: 0 0% 7%; /* #121212 solid lighter black card */
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 7%; /* #121212 solid obsidian popover */
+    --popover: 0 0% 7%; /* #121212 solid lighter black popover */
     --popover-foreground: 0 0% 98%;
     --primary: 217 91% 60%; /* #3b82f6 solid vivid blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 12%; /* #1f1f1f solid surface */
+    --secondary: 0 0% 7%; /* #121212 solid lighter black */
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 12%; /* #1f1f1f solid muted */
+    --muted: 0 0% 7%; /* #121212 solid lighter black */
     --muted-foreground: 0 0% 64%; /* #a3a3a3 solid muted text */
-    --accent: 0 0% 12%;
+    --accent: 0 0% 7%; /* #121212 solid lighter black */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 75% 55%; /* #ef4444 solid red */
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 16%; /* #292929 solid sleek border */
-    --input: 0 0% 16%;
+    --border: 0 0% 12%; /* #1f1f1f subtle dark border */
+    --input: 0 0% 12%; /* #1f1f1f subtle dark border */
     --ring: 217 91% 60%;
   }
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   * {
     @apply border-border;
   }

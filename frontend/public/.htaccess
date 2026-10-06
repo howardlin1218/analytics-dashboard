@@ -6,9 +6,8 @@
   # Allow Apache to route /api to Express reverse proxy
   RewriteRule ^api/ - [L]
 
-  # Serve existing physical files (e.g., reports, favicons, JS bundles) directly
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
+  # Serve existing physical files (e.g., reports PDFs, favicons, JS bundles) directly
+  RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule ^ - [L]
 
   # Route all other dashboard URLs to the React SPA index.html

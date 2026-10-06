@@ -1,5 +1,5 @@
 import { SessionListItem, SessionProfile, SessionTimelineEvent } from './telemetry';
-import { User, Role } from './auth';
+import { Role } from './auth';
 
 export interface OverviewCard {
   title: string;

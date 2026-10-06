@@ -2,12 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { UsersResponse } from '../types/api';
 
-export const useUsers = () => {
+export const useUsers = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['users'],
-    queryFn: async (): Promise<UsersResponse> => {
-      return await apiClient<UsersResponse>('/api/users');
+    queryFn: async ({ signal }): Promise<UsersResponse> => {
+      return await apiClient<UsersResponse>('/api/users', { signal });
     },
+    enabled: options?.enabled ?? true,
     staleTime: 30_000,
   });
 };

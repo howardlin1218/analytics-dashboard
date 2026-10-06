@@ -3,7 +3,7 @@ import { useFilters } from '../context/FilterContext';
 import { apiClient } from './client';
 import { ReportsResponse } from '../types/api';
 
-export const useReports = () => {
+export const useReports = (options?: { enabled?: boolean }) => {
   const { dateRange } = useFilters();
 
   return useQuery({
@@ -12,15 +12,16 @@ export const useReports = () => {
       dateRange.isAllTime ? 'all-time' : dateRange.startDate.toISOString(),
       dateRange.isAllTime ? 'all-time' : dateRange.endDate.toISOString(),
     ],
-    queryFn: async (): Promise<ReportsResponse> => {
+    queryFn: async ({ signal }): Promise<ReportsResponse> => {
       const params = new URLSearchParams();
       if (!dateRange.isAllTime) {
         params.set('startDate', dateRange.startDate.toISOString());
         params.set('endDate', dateRange.endDate.toISOString());
       }
 
-      return await apiClient<ReportsResponse>(`/api/reports?${params.toString()}`);
+      return await apiClient<ReportsResponse>(`/api/reports?${params.toString()}`, { signal });
     },
+    enabled: options?.enabled ?? true,
     staleTime: 30_000,
   });
 };

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User, AuthContextType } from '../types/auth';
 import { apiClient } from '../api/client';
 
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     try {
       const res = await apiClient<{ success: boolean; data?: User; error?: string }>('/api/log/login', {
         method: 'POST',
@@ -52,9 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       return { success: false, error: err.message || 'Login failed' };
     }
-  };
+  }, []);
 
-  const loginGuest = async () => {
+  const loginGuest = useCallback(async () => {
     try {
       const res = await apiClient<{ success: boolean; data?: User; error?: string }>('/api/log/guest', {
         method: 'POST',
@@ -71,9 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       return { success: false, error: err.message || 'Guest access failed' };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await apiClient('/api/log/logout', { method: 'POST' });
     } catch (e) {
@@ -81,25 +81,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
     }
-  };
+  }, []);
 
-  const updateCurrentUserLocal = (updates: Partial<User>) => {
+  const updateCurrentUserLocal = useCallback((updates: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...updates } : null));
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      user,
+      isLoading,
+      isAuthenticated: !!user,
+      login,
+      loginGuest,
+      logout,
+      refreshUser,
+      updateCurrentUserLocal,
+    }),
+    [user, isLoading, login, loginGuest, logout, refreshUser, updateCurrentUserLocal]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        loginGuest,
-        logout,
-        refreshUser,
-        updateCurrentUserLocal,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

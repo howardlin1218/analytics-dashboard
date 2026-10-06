@@ -14,6 +14,7 @@ import { ReportsView } from './views/ReportsView';
 import { AdminView } from './views/AdminView';
 import { LoginPage } from './views/LoginPage';
 import { LandingPage } from './views/LandingPage';
+import { PermissionGate } from './components/common/PermissionGate';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,12 +59,54 @@ export function App() {
 
               {/* Protected Dashboard Routes inside AppShell */}
               <Route element={<AppShell />}>
-                <Route path="/overview" element={<OverviewView />} />
-                <Route path="/performance" element={<PerformanceView />} />
-                <Route path="/errors" element={<ErrorsView />} />
-                <Route path="/sessions" element={<SessionsView />} />
-                <Route path="/reports" element={<ReportsView />} />
-                <Route path="/admin" element={<AdminView />} />
+                <Route
+                  path="/overview"
+                  element={
+                    <PermissionGate roles={['super admin', 'analyst', 'guest']}>
+                      <OverviewView />
+                    </PermissionGate>
+                  }
+                />
+                <Route
+                  path="/performance"
+                  element={
+                    <PermissionGate permission="performance">
+                      <PerformanceView />
+                    </PermissionGate>
+                  }
+                />
+                <Route
+                  path="/errors"
+                  element={
+                    <PermissionGate permission="errors">
+                      <ErrorsView />
+                    </PermissionGate>
+                  }
+                />
+                <Route
+                  path="/sessions"
+                  element={
+                    <PermissionGate permission="sessions">
+                      <SessionsView />
+                    </PermissionGate>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <PermissionGate>
+                      <ReportsView />
+                    </PermissionGate>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <PermissionGate roles="super admin">
+                      <AdminView />
+                    </PermissionGate>
+                  }
+                />
               </Route>
 
               {/* Catch-all */}

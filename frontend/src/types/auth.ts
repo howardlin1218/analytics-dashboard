@@ -1,6 +1,6 @@
 export type Role = 'super admin' | 'analyst' | 'viewer' | 'guest';
 
-export type Permission = 'performance' | 'errors' | 'sessions' | 'reports' | 'overview';
+export type Permission = 'performance' | 'errors' | 'sessions';
 
 export interface User {
   id: number;

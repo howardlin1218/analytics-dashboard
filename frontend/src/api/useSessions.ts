@@ -3,7 +3,7 @@ import { useFilters } from '../context/FilterContext';
 import { apiClient } from './client';
 import { SessionsListResponse, SessionDetailResponse } from '../types/api';
 
-export const useSessions = () => {
+export const useSessions = (options?: { enabled?: boolean }) => {
   const { selectedSite, dateRange } = useFilters();
 
   return useQuery({
@@ -13,7 +13,7 @@ export const useSessions = () => {
       dateRange.isAllTime ? 'all-time' : dateRange.startDate.toISOString(),
       dateRange.isAllTime ? 'all-time' : dateRange.endDate.toISOString(),
     ],
-    queryFn: async (): Promise<SessionsListResponse> => {
+    queryFn: async ({ signal }): Promise<SessionsListResponse> => {
       const params = new URLSearchParams();
       if (selectedSite && selectedSite !== 'all') {
         params.set('siteId', selectedSite);
@@ -23,20 +23,21 @@ export const useSessions = () => {
         params.set('endDate', dateRange.endDate.toISOString());
       }
 
-      return await apiClient<SessionsListResponse>(`/api/sessions?${params.toString()}`);
+      return await apiClient<SessionsListResponse>(`/api/sessions?${params.toString()}`, { signal });
     },
+    enabled: options?.enabled ?? true,
     staleTime: 30_000,
   });
 };
 
-export const useSessionDetail = (sessionId: string | null) => {
+export const useSessionDetail = (sessionId: string | null, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['session-detail', sessionId],
-    queryFn: async (): Promise<SessionDetailResponse> => {
+    queryFn: async ({ signal }): Promise<SessionDetailResponse> => {
       if (!sessionId) throw new Error('No session ID provided');
-      return await apiClient<SessionDetailResponse>(`/api/sessions/${encodeURIComponent(sessionId)}`);
+      return await apiClient<SessionDetailResponse>(`/api/sessions/${encodeURIComponent(sessionId)}`, { signal });
     },
-    enabled: !!sessionId,
+    enabled: (options?.enabled ?? true) && Boolean(sessionId),
     staleTime: 60_000,
   });
 };

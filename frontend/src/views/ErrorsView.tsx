@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import { AlertCircle, FileText, Terminal, Code2, Maximize2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,50 @@ export function ErrorsView() {
     role === 'guest' ||
     (role === 'analyst' && permissions.includes('errors'));
 
+  const chartData = data?.chart || { labels: [], values: [] };
+  const errorRows = data?.table || [];
+
+  const lineChartData = useMemo(
+    () => ({
+      labels: chartData.labels,
+      datasets: [
+        {
+          label: 'Errors Over Time',
+          data: chartData.values,
+          borderColor: '#dc2626',
+          backgroundColor: '#dc2626',
+          fill: false,
+          tension: 0.1,
+        },
+      ],
+    }),
+    [chartData.labels, chartData.values]
+  );
+
+  const lineChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: 'Errors Frequency Trend',
+          font: { size: 14, weight: 'bold' as const },
+        },
+      },
+      scales: {
+        x: { title: { display: true, text: 'Date' } },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Error Count' },
+          ticks: { precision: 0 },
+        },
+      },
+    }),
+    []
+  );
+
   if (!hasAccess) {
     return <AccessDenied requiredRole="Super Admin, Errors Analyst" />;
   }
@@ -59,44 +103,6 @@ export function ErrorsView() {
       />
     );
   }
-
-  const chartData = data?.chart || { labels: [], values: [] };
-  const errorRows = data?.table || [];
-
-  const lineChartData = {
-    labels: chartData.labels,
-    datasets: [
-      {
-        label: 'Errors Over Time',
-        data: chartData.values,
-        borderColor: '#dc2626',
-        backgroundColor: '#dc2626',
-        fill: false,
-        tension: 0.1,
-      },
-    ],
-  };
-
-  const lineChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: {
-        display: true,
-        text: 'Errors Frequency Trend',
-        font: { size: 14, weight: 'bold' as const },
-      },
-    },
-    scales: {
-      x: { title: { display: true, text: 'Date' } },
-      y: {
-        beginAtZero: true,
-        title: { display: true, text: 'Error Count' },
-        ticks: { precision: 0 },
-      },
-    },
-  };
 
   const handleSelectError = (row: ErrorRow) => {
     setSelectedError(row);
@@ -171,11 +177,11 @@ export function ErrorsView() {
               </TableHeader>
               <TableBody id="error-tbody">
                 {errorRows.length > 0 ? (
-                  errorRows.map((row: ErrorRow, idx: number) => {
+                  errorRows.map((row: ErrorRow) => {
                     const isSelected = selectedError?.message === row.message;
                     return (
                       <TableRow
-                        key={`${row.message}-${idx}`}
+                        key={`${row.time}-${row.type}-${row.message}`}
                         onClick={() => handleSelectError(row)}
                         className={`cursor-pointer transition-colors ${
                           isSelected ? 'bg-muted font-medium' : 'hover:bg-muted'

@@ -1,15 +1,22 @@
-import React from 'react';
-import { FileText, Download, Trash2, Folder, AlertCircle, Calendar } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Download, Trash2, Calendar } from 'lucide-react';
 import { useReports, useDeleteReport } from '../api/useReports';
 import { useAuth } from '../context/AuthContext';
 import { Skeleton } from '../components/ui/skeleton';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { toast } from '../components/ui/toast';
 import { useFilters } from '../context/FilterContext';
 import { filterItemsByDateRange } from '../utils/dateFilter';
 import { ReportItem } from '../types/api';
+
+type ReportCategory = 'performance' | 'errors' | 'sessions';
+
+const SECTION_ICONS: Record<ReportCategory, string> = {
+  performance: '⚡',
+  errors: '🚨',
+  sessions: '👥',
+};
 
 export function ReportsView() {
   const { user } = useAuth();
@@ -17,8 +24,10 @@ export function ReportsView() {
   const { data, isLoading, isError } = useReports();
   const deleteMutation = useDeleteReport();
 
-  const rawReports = data?.data || [];
-  const reports = filterItemsByDateRange(rawReports, dateRange);
+  const reports = useMemo(
+    () => filterItemsByDateRange(data?.data || [], dateRange),
+    [data?.data, dateRange]
+  );
 
   const handleDelete = async (report: ReportItem) => {
     if (!window.confirm(`Are you sure you want to delete "${report.title}"? This cannot be undone.`)) {
@@ -38,11 +47,14 @@ export function ReportsView() {
   };
 
   const getSectionIcon = (section: string) => {
-    switch (section.toLowerCase()) {
+    const sec = section.toLowerCase() as ReportCategory;
+    switch (sec) {
+      case 'performance':
+        return SECTION_ICONS.performance;
       case 'errors':
-        return '🚨';
+        return SECTION_ICONS.errors;
       case 'sessions':
-        return '👥';
+        return SECTION_ICONS.sessions;
       default:
         return '📊';
     }
@@ -60,7 +72,7 @@ export function ReportsView() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-64 rounded-xl" />
+            <Skeleton key={`skeleton-${i}`} className="h-64 rounded-xl" />
           ))}
         </div>
       ) : isError ? (

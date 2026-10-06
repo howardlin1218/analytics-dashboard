@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { subDays, endOfDay, startOfDay } from 'date-fns';
 
 export interface DateRange {
@@ -46,12 +46,12 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     return { startDate: start, endDate: end, isAllTime: false };
   });
 
-  const setSelectedSite = (site: string) => {
+  const setSelectedSite = useCallback((site: string) => {
     setSelectedSiteState(site);
     localStorage.setItem('_dashboard_selected_site', site);
-  };
+  }, []);
 
-  const setDateRange = (range: DateRange) => {
+  const setDateRange = useCallback((range: DateRange) => {
     const cappedStart = range.startDate.getFullYear() < 2000 ? startOfDay(new Date(2000, 0, 1)) : range.startDate;
     const cappedRange = { ...range, startDate: cappedStart };
     setDateRangeState(cappedRange);
@@ -60,10 +60,15 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       endDate: cappedRange.endDate.toISOString(),
       isAllTime: !!cappedRange.isAllTime,
     }));
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ selectedSite, setSelectedSite, dateRange, setDateRange }),
+    [selectedSite, setSelectedSite, dateRange, setDateRange]
+  );
 
   return (
-    <FilterContext.Provider value={{ selectedSite, setSelectedSite, dateRange, setDateRange }}>
+    <FilterContext.Provider value={contextValue}>
       {children}
     </FilterContext.Provider>
   );

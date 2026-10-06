@@ -3,7 +3,7 @@ import { useFilters } from '../context/FilterContext';
 import { apiClient } from './client';
 import { PerformanceResponse } from '../types/api';
 
-export const usePerformance = () => {
+export const usePerformance = (options?: { enabled?: boolean }) => {
   const { selectedSite, dateRange } = useFilters();
 
   return useQuery({
@@ -13,7 +13,7 @@ export const usePerformance = () => {
       dateRange.isAllTime ? 'all-time' : dateRange.startDate.toISOString(),
       dateRange.isAllTime ? 'all-time' : dateRange.endDate.toISOString(),
     ],
-    queryFn: async (): Promise<PerformanceResponse> => {
+    queryFn: async ({ signal }): Promise<PerformanceResponse> => {
       const params = new URLSearchParams();
       if (selectedSite && selectedSite !== 'all') {
         params.set('siteId', selectedSite);
@@ -23,8 +23,9 @@ export const usePerformance = () => {
         params.set('endDate', dateRange.endDate.toISOString());
       }
 
-      return await apiClient<PerformanceResponse>(`/api/performance?${params.toString()}`);
+      return await apiClient<PerformanceResponse>(`/api/performance?${params.toString()}`, { signal });
     },
+    enabled: options?.enabled ?? true,
     staleTime: 30_000,
   });
 };

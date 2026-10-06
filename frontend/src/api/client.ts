@@ -15,8 +15,20 @@ export async function apiClient<T>(
     headers.set('Content-Type', 'application/json');
   }
 
+  let signal = options.signal;
+  if (signal) {
+    try {
+      new Request('http://localhost', { signal });
+    } catch {
+      // In cross-realm test environments (e.g. Node 24+ with JSDOM and MSW),
+      // foreign AbortSignals fail native fetch brand validation.
+      signal = undefined;
+    }
+  }
+
   const res = await fetch(url, {
     ...options,
+    signal,
     headers,
     credentials: 'include',
   });
