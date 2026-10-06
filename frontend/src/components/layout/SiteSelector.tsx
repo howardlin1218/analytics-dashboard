@@ -11,8 +11,16 @@ export function SiteSelector() {
   const { data: sites = [], isLoading } = useSites();
   const [open, setOpen] = useState(false);
 
-  const siteList = ['all', ...sites.filter((s) => s !== 'all')];
-  const currentLabel = selectedSite === 'all' ? 'All Sites' : selectedSite;
+  const siteList = [
+    'all',
+    ...sites.filter(
+      (s) => s !== 'all' && s.trim().toLowerCase() !== 'localhost'
+    ),
+  ];
+  const currentLabel =
+    selectedSite === 'all' || selectedSite.trim().toLowerCase() === 'localhost'
+      ? 'All Sites'
+      : selectedSite;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

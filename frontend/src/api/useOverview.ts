@@ -9,7 +9,9 @@ export const useSites = () => {
     queryKey: ['sites'],
     queryFn: async () => {
       const res = await apiClient<{ success: boolean; sites: string[] }>('/api/overview/sites');
-      return res.sites || [];
+      return (res.sites || []).filter(
+        (site) => site.trim().toLowerCase() !== 'localhost'
+      );
     },
     staleTime: 60_000,
   });

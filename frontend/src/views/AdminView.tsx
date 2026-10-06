@@ -144,13 +144,13 @@ export function AdminView() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Admin Panel</h1>
-        <p className="text-sm text-muted-foreground">Manage user accounts, roles, and analyst permissions.</p>
+        {/* <p className="text-sm text-muted-foreground">Manage user accounts, roles, and analyst permissions.</p> */}
       </div>
 
       {/* Users Table */}
       <Card className="shadow-sm border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-bold">Existing Users</CardTitle>
+        <CardHeader className="pb-3 pl-4">
+          <CardTitle className="text-lg font-bold">Users</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>

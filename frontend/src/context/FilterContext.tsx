@@ -20,6 +20,9 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   // Initialize site from localStorage or default to 'all'
   const [selectedSite, setSelectedSiteState] = useState<string>(() => {
     const fromStorage = localStorage.getItem('_dashboard_selected_site');
+    if (fromStorage && fromStorage.trim().toLowerCase() === 'localhost') {
+      return 'all';
+    }
     return fromStorage || 'all';
   });
 
@@ -29,8 +32,10 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem('_dashboard_date_range');
       if (stored) {
         const parsed = JSON.parse(stored);
+        const parsedStart = new Date(parsed.startDate);
+        const cappedStart = parsedStart.getFullYear() < 2000 ? startOfDay(new Date(2000, 0, 1)) : parsedStart;
         return {
-          startDate: new Date(parsed.startDate),
+          startDate: cappedStart,
           endDate: new Date(parsed.endDate),
           isAllTime: !!parsed.isAllTime,
         };
@@ -47,11 +52,13 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setDateRange = (range: DateRange) => {
-    setDateRangeState(range);
+    const cappedStart = range.startDate.getFullYear() < 2000 ? startOfDay(new Date(2000, 0, 1)) : range.startDate;
+    const cappedRange = { ...range, startDate: cappedStart };
+    setDateRangeState(cappedRange);
     localStorage.setItem('_dashboard_date_range', JSON.stringify({
-      startDate: range.startDate.toISOString(),
-      endDate: range.endDate.toISOString(),
-      isAllTime: !!range.isAllTime,
+      startDate: cappedRange.startDate.toISOString(),
+      endDate: cappedRange.endDate.toISOString(),
+      isAllTime: !!cappedRange.isAllTime,
     }));
   };
 

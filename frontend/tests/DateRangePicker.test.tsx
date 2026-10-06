@@ -90,4 +90,85 @@ describe('DateRangePicker & FilterContext (Stage F1)', () => {
       expect(trigger).toHaveTextContent('All Time');
     });
   });
+
+  it('shows popup error when date does not exist (e.g. Feb 31)', async () => {
+    render(
+      <MemoryRouter>
+        <FilterProvider>
+          <DateRangePicker />
+          <TestConsumer />
+        </FilterProvider>
+      </MemoryRouter>
+    );
+
+    const trigger = screen.getByRole('button', { name: /select date range/i });
+    fireEvent.click(trigger);
+
+    const startInput = screen.getByLabelText(/start date/i);
+    const applyButton = screen.getByRole('button', { name: /apply range/i });
+
+    // Enter a non-existent date: Feb 31
+    fireEvent.change(startInput, { target: { value: '2026-02-31' } });
+    fireEvent.click(applyButton);
+
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert).toHaveTextContent(/invalid date.*selected date does not exist/i);
+  });
+
+  it('shows popup error when start date is after end date', async () => {
+    render(
+      <MemoryRouter>
+        <FilterProvider>
+          <DateRangePicker />
+          <TestConsumer />
+        </FilterProvider>
+      </MemoryRouter>
+    );
+
+    const trigger = screen.getByRole('button', { name: /select date range/i });
+    fireEvent.click(trigger);
+
+    const startInput = screen.getByLabelText(/start date/i);
+    const endInput = screen.getByLabelText(/end date/i);
+    const applyButton = screen.getByRole('button', { name: /apply range/i });
+
+    fireEvent.change(startInput, { target: { value: '2026-10-20' } });
+    fireEvent.change(endInput, { target: { value: '2026-10-10' } });
+    fireEvent.click(applyButton);
+
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert).toHaveTextContent(/start date cannot be after end date/i);
+  });
+
+  it('caps earliest year to 2000 on inputs and shows error when year is before 2000', async () => {
+    render(
+      <MemoryRouter>
+        <FilterProvider>
+          <DateRangePicker />
+          <TestConsumer />
+        </FilterProvider>
+      </MemoryRouter>
+    );
+
+    const trigger = screen.getByRole('button', { name: /select date range/i });
+    fireEvent.click(trigger);
+
+    const startInput = screen.getByLabelText(/start date/i) as HTMLInputElement;
+    const endInput = screen.getByLabelText(/end date/i) as HTMLInputElement;
+    const applyButton = screen.getByRole('button', { name: /apply range/i });
+
+    // Inputs have min set to 2000-01-01
+    expect(startInput).toHaveAttribute('min', '2000-01-01');
+    expect(endInput).toHaveAttribute('min', '2000-01-01');
+
+    // Entering a year before 2000
+    fireEvent.change(startInput, { target: { value: '1999-12-31' } });
+    fireEvent.click(applyButton);
+
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert).toHaveTextContent(/2000/i);
+  });
 });
