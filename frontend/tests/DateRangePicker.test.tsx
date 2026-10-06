@@ -34,9 +34,9 @@ describe('DateRangePicker & FilterContext (Stage F1)', () => {
 
     // Presets should be visible
     expect(screen.getByText('Today')).toBeInTheDocument();
-    expect(screen.getByText('Yesterday')).toBeInTheDocument();
     expect(screen.getByText('Last 7 Days')).toBeInTheDocument();
     expect(screen.getByText('Last 30 Days')).toBeInTheDocument();
+    expect(screen.getByText('All Time')).toBeInTheDocument();
 
     // Click 'Today' preset
     fireEvent.click(screen.getByText('Today'));
